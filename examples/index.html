@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hellow World | Native.js</title>
+</head>
+<body>
+    <main id="app"></main>
+
+    <template id="tpl-home">
+        <h1>Main Page</h1>
+    </template>
+
+    <template id="tpl-hello-world">
+        <a n-href="/other-page">other page</a>
+    </template>
+
+    <template id="tpl-other-page">
+        <h2>Other page</h2>
+    </template>
+
+    <!-- Custom Implementation -->
+    <script type="module">
+        import { createRouter, renderTemplate } from "/lib/index.js";
+        const container = document.querySelector('#app');
+        const routes = [
+            {
+                pathname: '/',
+                callbackFn: (urlPattern, state) => {
+                    renderTemplate('tpl-home', container, true)
+                } 
+            },
+            {
+                pathname: '/hello-world',
+                callbackFn: (urlPattern, state) => {
+                    renderTemplate('tpl-hello-world', container, true)
+                }
+            },
+            {
+                pathname: '/other-page',
+                callbackFn: (urlPattern, state) => {
+                    renderTemplate('tpl-other-page', container, true)
+                }
+            }
+        ]
+        const router = createRouter(routes);
+        router.start();
+    </script>
+</body>
+</html>

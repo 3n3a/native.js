@@ -1,0 +1,16 @@
+{
+  "name": "native.js",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bun run build.ts",
+    "predev": "bun run build.ts && bun run prep.ts",
+    "dev": "bun x serve -s examples"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
