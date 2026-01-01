@@ -19,33 +19,60 @@
     <template id="tpl-other-page">
         <h2>Other page</h2>
     </template>
-
+    
     <!-- Custom Implementation -->
     <script type="module">
-        import { createRouter, renderTemplate } from "/lib/index.js";
+        import { createNativeJs, renderTemplate, NativeJsElement } from "/lib/index.js";
         const container = document.querySelector('#app');
+
+        class MainElement extends NativeJsElement {
+            constructor() {
+                super({
+                    name: 'main',
+                    templateId: 'tpl-home',
+                    host: container
+                });
+            }
+        }
+
+        class HelloWorldElement extends NativeJsElement {
+            constructor() {
+                super({
+                    name: 'hello-world',
+                    templateId: 'tpl-hello-world',
+                    host: container
+                });
+            }
+        }
+
+        class OtherPageElement extends NativeJsElement {
+            constructor() {
+                super({
+                    name: 'other-page',
+                    templateId: 'tpl-other-page',
+                    host: container
+                });
+            }
+        }
+
         const routes = [
             {
                 pathname: '/',
-                callbackFn: (urlPattern, state) => {
-                    renderTemplate('tpl-home', container, true)
-                } 
+                element: MainElement,
             },
             {
                 pathname: '/hello-world',
-                callbackFn: (urlPattern, state) => {
-                    renderTemplate('tpl-hello-world', container, true)
-                }
+                element: HelloWorldElement
             },
             {
                 pathname: '/other-page',
-                callbackFn: (urlPattern, state) => {
-                    renderTemplate('tpl-other-page', container, true)
-                }
+                element: OtherPageElement
             }
         ]
-        const router = createRouter(routes);
-        router.start();
+        const nativeJs = createNativeJs(container, routes);
+        nativeJs.run();
+
+        window.nativeJs = nativeJs;
     </script>
 </body>
 </html>

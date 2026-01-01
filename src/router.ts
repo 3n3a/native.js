@@ -1,14 +1,17 @@
 import { NativeURLChangeEvent } from "./event";
-import type { NativeRoute } from "./interfaces";
+import type { NativeRoute, NativeRouteList } from "./interfaces";
+import type { NativeJsElementRegistry } from "./n";
 
-export function createRouter(routes: NativeRoute[]) {
-    return new NativeRouter(routes);
+export function createRouter(registry: NativeJsElementRegistry, routes: NativeRouteList) {
+    return new NativeRouter(registry, routes);
 }
 
 export class NativeRouter {
+    private registry: NativeJsElementRegistry;
     private patternToRoute: Map<URLPattern, NativeRoute>;
 
-    constructor(routes: NativeRoute[]) {
+    constructor(registry: NativeJsElementRegistry, routes: NativeRouteList) {
+        this.registry = registry;
         this.patternToRoute = new Map();
         this.compileRoutes(routes);
     }
@@ -34,7 +37,7 @@ export class NativeRouter {
 
     }
 
-    private compileRoutes(routes: NativeRoute[]) {
+    private compileRoutes(routes: NativeRouteList) {
         for (const route of routes) {
             const currentPattern = new URLPattern({ pathname: route.pathname });
             this.patternToRoute.set(currentPattern, route);
@@ -60,7 +63,8 @@ export class NativeRouter {
         const matchingRouteResult = this.findMatchingRoute(currentURL.pathname);
         if (matchingRouteResult) {
             const [currentRoute, urlPatternResult] = matchingRouteResult;
-            currentRoute.callbackFn(urlPatternResult, currentState);
+            const element = this.registry.getElement(currentRoute.elementName);
+            element.render(urlPatternResult, currentState);
         } else {
             throw new Error('failed to find matching route');
         }
