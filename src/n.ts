@@ -1,6 +1,6 @@
 import { NativeJsElementAlreadyExistsError, NativeJsElementNotExistsError } from "./error";
 import type { NativeJsElementOptions, NativeRoute, NativeRouteInput, NativeRouteList, NativeRouteListInput } from "./interfaces";
-import { renderFragment, renderTemplate } from "./render";
+import { renderFragment } from "./render";
 import { createRouter, type NativeRouter } from "./router";
 
 export class NativeJsElement {
@@ -10,7 +10,7 @@ export class NativeJsElement {
     host: HTMLElement;
     htmlElInstance?: HTMLElement;
 
-    constructor(options: NativeJsElementOptions) {        
+    constructor(options: NativeJsElementOptions) {
         this.name = options.name;
         this.templateId = options.templateId;
         this.host = options.host;
@@ -27,22 +27,38 @@ export class NativeJsElement {
     }
 
     public render(urlPatternResult: URLPatternResult, state: object) {
-        const generalElement = this.createHighestRankingNativeJsElement(this.name);
+        if (!this.htmlElInstance) {
+            this.htmlElInstance = this.createHighestRankingNativeJsElement(this.name);
+        }
         const templateEl: HTMLTemplateElement | null = document.querySelector('#' + this.templateId);
         if (!templateEl) {
             throw new Error('template not found')
         }
 
         const clonedVersion = document.importNode(templateEl.content, true);
-        renderFragment([clonedVersion], generalElement, false);
-
-        // if (hasNativeJsElements(clonedVersion)) {
-        //     initNativeJsElements(registry, clonedVersion);
-        // }
-
-        renderFragment([generalElement], this.host, true);
+        renderFragment([clonedVersion], this.htmlElInstance, false);
+        renderFragment([this.htmlElInstance], this.host, true);
 
         this.onInit(urlPatternResult, state);
+    }
+
+    public getChild(selector: string): HTMLElement | null {
+        let foundElement = null;
+        if (this.htmlElInstance) {
+            foundElement = this.htmlElInstance.querySelector<HTMLElement>(selector);
+        }
+        return foundElement;
+    }
+
+    public getChildren(selector: string): HTMLElement[] | null {
+        let foundElements: HTMLElement[] = [];
+        if (this.htmlElInstance) {
+            const result = this.htmlElInstance.querySelectorAll<HTMLElement>(selector);
+            if (result.length > 0) {
+                foundElements = Array.from(result);
+            }
+        }
+        return foundElements;
     }
 
     public onInit(urlPatternResult: URLPatternResult, state: object) {
@@ -143,7 +159,7 @@ function createRouteFromInput<T extends NativeJsElement>(registry: NativeJsEleme
 
 // Generic factory function with type safety
 function instantiate<T>(ClassToInstantiate: new (...args: any[]) => T, ...args: any[]): T {
-  return new ClassToInstantiate(...args);
+    return new ClassToInstantiate(...args);
 }
 
 export function createNativeJs<T extends NativeJsElement>(host: HTMLElement, routes: NativeRouteListInput<T>) {
