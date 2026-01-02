@@ -1,6 +1,5 @@
 import { NativeJsComponentAlreadyExistsError, NativeJsComponentNotExistsError } from "./error";
 import type { NativeRoute, NativeRouteInput, NativeRouteList, NativeRouteListInput } from "./interfaces";
-import { renderFragment } from "./render";
 import { createRouter, type NativeRouter } from "./router";
 
 /**
@@ -20,19 +19,31 @@ export abstract class NativeJsComponent extends HTMLElement {
     static templateId: string;
 
     /**
-     * Reference to the host element where this component is mounted
+     * Route pattern result (set by router before insertion)
      */
-    protected host: HTMLElement | null = null;
+    protected urlPatternResult: URLPatternResult | null = null;
+
+    /**
+     * Route state (set by router before insertion)
+     */
+    protected routeState: object = {};
+
+    /**
+     * Whether the template has been rendered
+     */
+    private _templateRendered: boolean = false;
 
     constructor() {
         super();
     }
 
     /**
-     * Native Web Component lifecycle - called when element is added to DOM
+     * Native Web Component lifecycle - called when element is added to DOM.
+     * Renders the template and calls onInit.
      */
     connectedCallback() {
-        // Can be overridden by subclasses
+        this.renderTemplate();
+        this.onInit(this.urlPatternResult, this.routeState);
     }
 
     /**
@@ -43,30 +54,38 @@ export abstract class NativeJsComponent extends HTMLElement {
     }
 
     /**
-     * Renders the component using its template
+     * Set route data before the component is inserted into the DOM.
+     * Called by the router.
      */
-    public render(urlPatternResult: URLPatternResult, state: object, host: HTMLElement) {
-        this.host = host;
+    setRouteData(urlPatternResult: URLPatternResult, state: object) {
+        this.urlPatternResult = urlPatternResult;
+        this.routeState = state;
+    }
 
+    /**
+     * Renders the template content into the component (light DOM)
+     */
+    private renderTemplate() {
         const constructor = this.constructor as typeof NativeJsComponent;
-        const templateEl: HTMLTemplateElement | null = document.querySelector('#' + constructor.templateId);
+        
+        // Skip if no template defined or already rendered
+        if (!constructor.templateId || this._templateRendered) {
+            return;
+        }
+
+        const templateEl = document.querySelector<HTMLTemplateElement>('#' + constructor.templateId);
         
         if (!templateEl) {
             throw new Error(`Template with id "${constructor.templateId}" not found`);
         }
 
-        // Clear previous content
+        // Clear any existing content
         this.innerHTML = '';
 
         const clonedContent = document.importNode(templateEl.content, true);
-        
-        // Append cloned content to this component (light DOM)
         this.appendChild(clonedContent);
         
-        // Mount this component to the host
-        renderFragment([this], host, true);
-
-        this.onInit(urlPatternResult, state);
+        this._templateRendered = true;
     }
 
     /**
@@ -80,28 +99,25 @@ export abstract class NativeJsComponent extends HTMLElement {
      * Query multiple child elements within this component
      */
     public getChildren<T extends HTMLElement = HTMLElement>(selector: string): T[] {
-        const result = this.querySelectorAll<T>(selector);
-        return Array.from(result);
+        return Array.from(this.querySelectorAll<T>(selector));
     }
 
     /**
-     * Lifecycle hook called after the component is rendered
-     * Override this in subclasses to initialize component logic
+     * Lifecycle hook called after the component is connected to the DOM.
+     * Override this in subclasses to initialize component logic.
      */
-    public onInit(urlPatternResult: URLPatternResult, state: object) {
+    public onInit(urlPatternResult: URLPatternResult | null, state: object) {
         // Override in subclass
     }
 }
 
 /**
- * Registry for managing NativeJsComponent instances
+ * Registry for managing NativeJsComponent classes
  */
 export class NativeJsComponentRegistry {
-    private componentInstances: Map<string, NativeJsComponent>;
     private registeredTags: Set<string>;
 
     constructor() {
-        this.componentInstances = new Map();
         this.registeredTags = new Set();
     }
 
@@ -126,46 +142,10 @@ export class NativeJsComponentRegistry {
     }
 
     /**
-     * Register a component instance by name
+     * Check if a component class is registered
      */
-    public registerComponent(name: string, component: NativeJsComponent) {
-        if (!name || !component) {
-            throw new Error('Cannot add component to registry: name or component is empty');
-        }
-        if (this.componentInstances.has(name)) {
-            throw new NativeJsComponentAlreadyExistsError(
-                `Cannot add component with name "${name}" to registry: it already exists`
-            );
-        }
-        this.componentInstances.set(name, component);
-    }
-
-    /**
-     * Get a component instance by name
-     */
-    public getComponent(name: string): NativeJsComponent {
-        if (!this.componentInstances.has(name)) {
-            throw new NativeJsComponentNotExistsError(
-                `Cannot get component with name "${name}" from registry: it does not exist`
-            );
-        }
-        const component = this.componentInstances.get(name);
-        if (!component) {
-            throw new Error('Component stored in registry is empty');
-        }
-        return component;
-    }
-
-    /**
-     * Remove a component instance from the registry
-     */
-    public disposeComponent(name: string) {
-        if (!this.componentInstances.has(name)) {
-            throw new NativeJsComponentNotExistsError(
-                `Cannot dispose component with name "${name}" from registry: it does not exist`
-            );
-        }
-        this.componentInstances.delete(name);
+    public isRegistered(tagName: string): boolean {
+        return this.registeredTags.has(tagName);
     }
 }
 
@@ -199,7 +179,7 @@ export class NativeJs {
 }
 
 /**
- * Convert route inputs to native routes and register components
+ * Convert route inputs to native routes and register component classes
  */
 function getNativeRoutesFromInput<T extends NativeJsComponent>(
     registry: NativeJsComponentRegistry, 
@@ -216,7 +196,7 @@ function getNativeRoutesFromInput<T extends NativeJsComponent>(
 }
 
 /**
- * Create a native route from input, registering the component class and instance
+ * Create a native route from input, registering the component class
  */
 function createRouteFromInput<T extends NativeJsComponent>(
     registry: NativeJsComponentRegistry, 
@@ -225,16 +205,9 @@ function createRouteFromInput<T extends NativeJsComponent>(
     // Register the component class as a custom element
     registry.registerComponentClass(routeInput.element);
     
-    // Create an instance of the component
-    const tagName = routeInput.element.tagName;
-    const componentInstance = document.createElement(tagName) as T;
-    
-    // Register the instance
-    registry.registerComponent(tagName, componentInstance);
-
     return {
         pathname: routeInput.pathname,
-        componentName: tagName
+        componentName: routeInput.element.tagName
     };
 }
 

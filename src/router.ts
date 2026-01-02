@@ -1,6 +1,6 @@
 import { NativeURLChangeEvent } from "./event";
 import type { NativeRoute, NativeRouteList } from "./interfaces";
-import type { NativeJsComponentRegistry } from "./n";
+import type { NativeJsComponent, NativeJsComponentRegistry } from "./n";
 
 export function createRouter(registry: NativeJsComponentRegistry, routes: NativeRouteList, host?: HTMLElement) {
     return new NativeRouter(registry, routes, host);
@@ -72,8 +72,15 @@ export class NativeRouter {
         
         if (matchingRouteResult) {
             const [currentRoute, urlPatternResult] = matchingRouteResult;
-            const component = this.registry.getComponent(currentRoute.componentName);
-            component.render(urlPatternResult, currentState, this.host);
+            
+            // Create a new instance of the component
+            const component = document.createElement(currentRoute.componentName) as NativeJsComponent;
+            
+            // Set route data before insertion (before connectedCallback fires)
+            component.setRouteData(urlPatternResult, currentState);
+            
+            // Insert into host - this triggers connectedCallback which renders template and calls onInit
+            this.host.replaceChildren(component);
         } else {
             throw new Error('Failed to find matching route');
         }

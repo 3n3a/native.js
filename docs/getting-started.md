@@ -17,8 +17,8 @@ class HomePage extends NativeJsComponent {
   static tagName = 'n-home';
   static templateId = 'tpl-home';
 
-  onInit(urlPatternResult: URLPatternResult, state: object) {
-    // Component initialized
+  onInit(urlPatternResult: URLPatternResult | null, state: object) {
+    // Component connected to DOM
   }
 }
 ```
@@ -45,3 +45,22 @@ app.run();
 </template>
 ```
 
+## Nested Components
+
+Components can be nested inside other component templates:
+
+```html
+<template id="tpl-home">
+  <h1>Welcome</h1>
+  <n-footer></n-footer>
+</template>
+```
+
+Register non-routed components:
+
+```typescript
+import { createNativeJsComponentRegistry } from './native.js';
+
+const registry = createNativeJsComponentRegistry();
+registry.registerComponentClass(FooterComponent);
+```

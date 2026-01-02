@@ -9,8 +9,8 @@ class MyComponent extends NativeJsComponent {
   static tagName = 'n-my-component';
   static templateId = 'tpl-my-component';
   
-  onInit(urlPatternResult: URLPatternResult, state: object) {
-    // Called after the component is rendered
+  onInit(urlPatternResult: URLPatternResult | null, state: object) {
+    // Called each time the component is inserted into the DOM
   }
 }
 ```
@@ -26,9 +26,40 @@ class MyComponent extends NativeJsComponent {
 
 | Method | Description |
 |--------|-------------|
-| `onInit(urlPatternResult, state)` | Called after render |
-| `connectedCallback()` | Native: element added to DOM |
+| `onInit(urlPatternResult, state)` | Called after component is connected to DOM |
+| `connectedCallback()` | Native: element added to DOM (renders template, calls onInit) |
 | `disconnectedCallback()` | Native: element removed from DOM |
+
+## Using Components
+
+### Via Routes
+
+Components are automatically instantiated when their route matches:
+
+```typescript
+const routes = [
+  { pathname: '/', element: HomePage },
+  { pathname: '/users/:id', element: UserPage }
+];
+```
+
+### Nested in Templates
+
+Components can be used directly in other component templates:
+
+```html
+<template id="tpl-home">
+  <h1>Home</h1>
+  <n-footer></n-footer>
+</template>
+```
+
+Non-routed components must be registered manually:
+
+```typescript
+const registry = createNativeJsComponentRegistry();
+registry.registerComponentClass(FooterComponent);
+```
 
 ## Querying Children
 
@@ -43,4 +74,3 @@ const items = this.getChildren('.list-item');
 ## Shadow DOM
 
 Shadow DOM is disabled by default. Components render directly to the light DOM.
-

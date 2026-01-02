@@ -11,26 +11,46 @@
     <template id="tpl-home">
         <h1 id="main-h1">Main Page</h1>
         <a n-href="/hello-world">Go to Hello World</a>
+        <!-- Nested component example -->
+        <n-footer></n-footer>
     </template>
 
     <template id="tpl-hello-world">
         <h2>Hello World Page</h2>
         <a n-href="/">Back to Home</a>
         <a n-href="/other-page">Go to Other Page</a>
+        <n-footer></n-footer>
     </template>
 
     <template id="tpl-other-page">
         <h2>Other Page</h2>
         <a n-href="/">Back to Home</a>
+        <n-footer></n-footer>
+    </template>
+
+    <template id="tpl-footer">
+        <footer style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ccc;">
+            <p>Native.js Footer Component</p>
+        </footer>
     </template>
     
     <!-- Custom Implementation -->
     <script type="module">
-        import { createNativeJs, NativeJsComponent } from "/lib/index.js";
+        import { createNativeJs, NativeJsComponent, createNativeJsComponentRegistry } from "/lib/index.js";
         
         const container = document.querySelector('#app');
 
-        // Main page component using Web Components
+        // Footer component - can be nested in other components
+        class FooterElement extends NativeJsComponent {
+            static tagName = 'n-footer';
+            static templateId = 'tpl-footer';
+
+            onInit(urlPatternResult, state) {
+                console.log('FooterElement initialized');
+            }
+        }
+
+        // Main page component
         class MainElement extends NativeJsComponent {
             static tagName = 'n-main';
             static templateId = 'tpl-home';
@@ -63,6 +83,10 @@
                 console.log('OtherPageElement initialized');
             }
         }
+
+        // Register non-routed components manually
+        const registry = createNativeJsComponentRegistry();
+        registry.registerComponentClass(FooterElement);
 
         // Define routes
         const routes = [
