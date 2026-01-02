@@ -3,45 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World | Native.js</title>
+    <title>Native.js Demo</title>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 2rem; }
+        body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; }
+        h1, h2, h3 { margin-top: 2rem; }
         .counter { display: flex; gap: 1rem; align-items: center; margin: 1rem 0; }
         button { padding: 0.5rem 1rem; cursor: pointer; }
-        .state-display { background: #f0f0f0; padding: 1rem; border-radius: 4px; margin: 1rem 0; }
+        .state-display { background: #f0f0f0; padding: 1rem; border-radius: 4px; margin: 1rem 0; font-size: 0.9rem; }
+        .user-card { border: 1px solid #ddd; padding: 1rem; margin: 0.5rem 0; border-radius: 4px; }
+        .user-card h4 { margin: 0 0 0.5rem 0; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: #c00; }
+        form { display: flex; flex-direction: column; gap: 0.5rem; max-width: 300px; }
+        input, textarea { padding: 0.5rem; }
+        .submit-result { margin-top: 1rem; padding: 1rem; background: #e8f5e9; border-radius: 4px; }
+        .submit-result.error { background: #ffebee; }
+        nav { margin: 1rem 0; display: flex; gap: 1rem; }
+        nav a { color: #0066cc; }
+        hr { margin: 2rem 0; }
     </style>
 </head>
 <body>
     <main id="app"></main>
 
+    <!-- Home Page Template -->
     <template id="tpl-home">
-        <h1 id="main-h1">Main Page</h1>
-        
-        <!-- Counter using n-state attribute (inline state) -->
-        <section>
-            <h3>Counter with Attribute State (n-state)</h3>
-            <n-counter n-state='{"count": 0}'></n-counter>
-        </section>
-
-        <!-- Counter using n-state-key (sessionStorage backed) -->
-        <section>
-            <h3>Counter with Session Storage (n-state-key)</h3>
-            <p><em>This counter persists across page refreshes within the session</em></p>
-            <n-counter n-state-key="session-counter" n-state-storage="session"></n-counter>
-        </section>
-
-        <!-- Counter using n-state-key (localStorage backed) -->
-        <section>
-            <h3>Counter with Local Storage (n-state-key)</h3>
-            <p><em>This counter persists even after browser restart</em></p>
-            <n-counter n-state-key="local-counter" n-state-storage="local"></n-counter>
-        </section>
-
-        <hr>
-        <a n-href="/hello-world">Go to Hello World</a>
+        <h1>Native.js Demo</h1>
+        <nav>
+            <a n-href="/data-demo">Data Fetching Demo</a>
+            <a n-href="/state-demo">State Demo</a>
+        </nav>
         <n-footer></n-footer>
     </template>
 
+    <!-- Data Demo Page Template -->
+    <template id="tpl-data-demo">
+        <h1>Data Fetching & Submit Demo</h1>
+        <nav>
+            <a n-href="/">Home</a>
+            <a n-href="/state-demo">State Demo</a>
+        </nav>
+        
+        <h2>Auto-Fetch (n-fetch attribute)</h2>
+        <p>This component fetches data automatically when mounted:</p>
+        <n-user-list n-fetch="/api/users.json" n-fetch-key="users"></n-user-list>
+        
+        <h2>Manual Fetch (this.data.fetch)</h2>
+        <n-posts-list></n-posts-list>
+        
+        <h2>Submit Data (this.data.submit)</h2>
+        <n-contact-form></n-contact-form>
+        
+        <n-footer></n-footer>
+    </template>
+
+    <!-- State Demo Page Template -->
+    <template id="tpl-state-demo">
+        <h1>State Management Demo</h1>
+        <nav>
+            <a n-href="/">Home</a>
+            <a n-href="/data-demo">Data Fetching Demo</a>
+        </nav>
+        
+        <h3>Counter with Attribute State (n-state)</h3>
+        <n-counter n-state='{"count": 0}'></n-counter>
+
+        <h3>Counter with Session Storage (n-state-key)</h3>
+        <p><em>Persists across page refreshes within session</em></p>
+        <n-counter n-state-key="session-counter" n-state-storage="session"></n-counter>
+
+        <h3>Counter with Local Storage</h3>
+        <p><em>Persists even after browser restart</em></p>
+        <n-counter n-state-key="local-counter" n-state-storage="local"></n-counter>
+        
+        <n-footer></n-footer>
+    </template>
+
+    <!-- User List Template (auto-fetch example) -->
+    <template id="tpl-user-list">
+        <div class="user-list">
+            <div class="loading-indicator"></div>
+            <div class="error-message"></div>
+            <div class="users-container"></div>
+        </div>
+    </template>
+
+    <!-- Posts List Template (manual fetch example) -->
+    <template id="tpl-posts-list">
+        <div class="posts-list">
+            <button class="fetch-btn">Fetch Posts</button>
+            <div class="loading-indicator"></div>
+            <div class="posts-container"></div>
+        </div>
+    </template>
+
+    <!-- Contact Form Template (submit example) -->
+    <template id="tpl-contact-form">
+        <div class="contact-form">
+            <form>
+                <input type="text" name="name" placeholder="Your name" required>
+                <input type="email" name="email" placeholder="Your email" required>
+                <textarea name="message" placeholder="Your message" rows="3" required></textarea>
+                <button type="submit">Submit</button>
+            </form>
+            <div class="submit-result-container"></div>
+        </div>
+    </template>
+
+    <!-- Counter Template -->
     <template id="tpl-counter">
         <div class="counter">
             <button class="decrement">-</button>
@@ -49,64 +118,175 @@
             <button class="increment">+</button>
         </div>
         <div class="state-display">
-            <strong>State mode:</strong> <span class="mode"></span><br>
-            <strong>Current state:</strong> <code class="state-json"></code>
+            <strong>Mode:</strong> <span class="mode"></span> | 
+            <strong>State:</strong> <code class="state-json"></code>
         </div>
     </template>
 
-    <template id="tpl-hello-world">
-        <h2>Hello World Page</h2>
-        <a n-href="/">Back to Home</a>
-        <a n-href="/other-page">Go to Other Page</a>
-        <n-footer></n-footer>
-    </template>
-
-    <template id="tpl-other-page">
-        <h2>Other Page</h2>
-        <a n-href="/">Back to Home</a>
-        <n-footer></n-footer>
-    </template>
-
+    <!-- Footer Template -->
     <template id="tpl-footer">
-        <footer style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ccc;">
-            <p>Native.js Footer Component</p>
+        <footer style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #666;">
+            <p>Native.js Framework Demo</p>
         </footer>
     </template>
     
-    <!-- Custom Implementation -->
     <script type="module">
         import { createNativeJs, NativeJsComponent, createNativeJsComponentRegistry } from "/lib/index.js";
         
         const container = document.querySelector('#app');
 
-        // Counter component - demonstrates state usage
+        // ============================================
+        // User List Component (Auto-fetch example)
+        // ============================================
+        class UserListElement extends NativeJsComponent {
+            static tagName = 'n-user-list';
+            static templateId = 'tpl-user-list';
+
+            onInit() {
+                this.updateDisplay();
+            }
+
+            onDataFetched(stateKey, data, error) {
+                // Called after auto-fetch completes
+                console.log('Users fetched:', { stateKey, data, error });
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const loadingEl = this.getChild('.loading-indicator');
+                const errorEl = this.getChild('.error-message');
+                const containerEl = this.getChild('.users-container');
+
+                const isLoading = this.state.get('usersLoading');
+                const error = this.state.get('usersError');
+                const data = this.state.get('users');
+
+                if (loadingEl) {
+                    loadingEl.innerHTML = isLoading ? '<p class="loading">Loading users...</p>' : '';
+                }
+
+                if (errorEl) {
+                    errorEl.innerHTML = error ? `<p class="error">Error: ${error}</p>` : '';
+                }
+
+                if (containerEl && data?.users) {
+                    containerEl.innerHTML = data.users.map(user => `
+                        <div class="user-card">
+                            <h4>${user.name}</h4>
+                            <p>${user.email} - ${user.role}</p>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        // ============================================
+        // Posts List Component (Manual fetch example)
+        // ============================================
+        class PostsListElement extends NativeJsComponent {
+            static tagName = 'n-posts-list';
+            static templateId = 'tpl-posts-list';
+
+            onInit() {
+                const fetchBtn = this.getChild('.fetch-btn');
+                fetchBtn?.addEventListener('click', () => this.fetchPosts());
+            }
+
+            async fetchPosts() {
+                const loadingEl = this.getChild('.loading-indicator');
+                const containerEl = this.getChild('.posts-container');
+
+                if (loadingEl) loadingEl.innerHTML = '<p class="loading">Loading posts...</p>';
+                if (containerEl) containerEl.innerHTML = '';
+
+                // Manual fetch - stores result in state under 'posts' key
+                const response = await this.data.fetch('/api/posts.json', { stateKey: 'posts' });
+
+                if (loadingEl) loadingEl.innerHTML = '';
+
+                if (response.ok && containerEl) {
+                    const posts = response.data?.posts || [];
+                    containerEl.innerHTML = posts.map(post => `
+                        <div class="user-card">
+                            <h4>${post.title}</h4>
+                            <p>${post.content}</p>
+                            <small>By ${post.author} on ${post.date}</small>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        // ============================================
+        // Contact Form Component (Submit example)
+        // ============================================
+        class ContactFormElement extends NativeJsComponent {
+            static tagName = 'n-contact-form';
+            static templateId = 'tpl-contact-form';
+
+            onInit() {
+                const form = this.getChild('form');
+                form?.addEventListener('submit', (e) => this.handleSubmit(e));
+            }
+
+            async handleSubmit(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                const resultContainer = this.getChild('.submit-result-container');
+                if (resultContainer) {
+                    resultContainer.innerHTML = '<p class="loading">Submitting...</p>';
+                }
+
+                // Submit data - result is NOT stored in state
+                // Note: For demo, we fetch the mock response since we can't actually POST to JSON
+                const response = await this.data.fetch('/api/submit-response.json');
+
+                if (resultContainer) {
+                    if (response.ok) {
+                        resultContainer.innerHTML = `
+                            <div class="submit-result">
+                                <strong>Success!</strong><br>
+                                ${response.data?.message}<br>
+                                <small>ID: ${response.data?.id}</small>
+                            </div>
+                        `;
+                        form.reset();
+                    } else {
+                        resultContainer.innerHTML = `
+                            <div class="submit-result error">
+                                <strong>Error:</strong> ${response.error}
+                            </div>
+                        `;
+                    }
+                }
+            }
+        }
+
+        // ============================================
+        // Counter Component (State example)
+        // ============================================
         class CounterElement extends NativeJsComponent {
             static tagName = 'n-counter';
             static templateId = 'tpl-counter';
 
             onInit() {
-                // Initialize count if not set
                 if (!this.state.has('count')) {
                     this.state.set('count', 0);
                 }
-
                 this.updateDisplay();
                 this.setupEventListeners();
             }
 
             setupEventListeners() {
-                const incrementBtn = this.getChild('.increment');
-                const decrementBtn = this.getChild('.decrement');
-
-                incrementBtn?.addEventListener('click', () => {
-                    const count = this.state.get('count') ?? 0;
-                    this.state.set('count', count + 1);
+                this.getChild('.increment')?.addEventListener('click', () => {
+                    this.state.set('count', (this.state.get('count') ?? 0) + 1);
                     this.updateDisplay();
                 });
-
-                decrementBtn?.addEventListener('click', () => {
-                    const count = this.state.get('count') ?? 0;
-                    this.state.set('count', count - 1);
+                this.getChild('.decrement')?.addEventListener('click', () => {
+                    this.state.set('count', (this.state.get('count') ?? 0) - 1);
                     this.updateDisplay();
                 });
             }
@@ -116,69 +296,58 @@
                 const modeEl = this.getChild('.mode');
                 const stateJsonEl = this.getChild('.state-json');
 
-                if (countEl) {
-                    countEl.textContent = String(this.state.get('count') ?? 0);
-                }
+                if (countEl) countEl.textContent = String(this.state.get('count') ?? 0);
                 if (modeEl) {
                     const mode = this.state.getMode();
-                    const storageKey = this.state.getStorageKey();
-                    modeEl.textContent = mode === 'storage' ? `storage (${storageKey})` : 'attribute';
+                    const key = this.state.getStorageKey();
+                    modeEl.textContent = mode === 'storage' ? `storage (${key})` : 'attribute';
                 }
-                if (stateJsonEl) {
-                    stateJsonEl.textContent = JSON.stringify(this.state.getAll());
-                }
+                if (stateJsonEl) stateJsonEl.textContent = JSON.stringify(this.state.getAll());
             }
         }
 
-        // Footer component
+        // ============================================
+        // Page Components
+        // ============================================
+        class HomeElement extends NativeJsComponent {
+            static tagName = 'n-home';
+            static templateId = 'tpl-home';
+        }
+
+        class DataDemoElement extends NativeJsComponent {
+            static tagName = 'n-data-demo';
+            static templateId = 'tpl-data-demo';
+        }
+
+        class StateDemoElement extends NativeJsComponent {
+            static tagName = 'n-state-demo';
+            static templateId = 'tpl-state-demo';
+        }
+
         class FooterElement extends NativeJsComponent {
             static tagName = 'n-footer';
             static templateId = 'tpl-footer';
         }
 
-        // Main page component
-        class MainElement extends NativeJsComponent {
-            static tagName = 'n-main';
-            static templateId = 'tpl-home';
-
-            onInit() {
-                console.log('MainElement initialized');
-                const h1 = this.getChild('#main-h1');
-                if (h1) {
-                    h1.innerText = 'Main Page - State Demo';
-                }
-            }
-        }
-
-        // Hello World component
-        class HelloWorldElement extends NativeJsComponent {
-            static tagName = 'n-hello-world';
-            static templateId = 'tpl-hello-world';
-        }
-
-        // Other Page component
-        class OtherPageElement extends NativeJsComponent {
-            static tagName = 'n-other-page';
-            static templateId = 'tpl-other-page';
-        }
-
-        // Register non-routed components manually
+        // ============================================
+        // Register & Run
+        // ============================================
         const registry = createNativeJsComponentRegistry();
         registry.registerComponentClass(FooterElement);
         registry.registerComponentClass(CounterElement);
+        registry.registerComponentClass(UserListElement);
+        registry.registerComponentClass(PostsListElement);
+        registry.registerComponentClass(ContactFormElement);
 
-        // Define routes
         const routes = [
-            { pathname: '/', element: MainElement },
-            { pathname: '/hello-world', element: HelloWorldElement },
-            { pathname: '/other-page', element: OtherPageElement }
+            { pathname: '/', element: HomeElement },
+            { pathname: '/data-demo', element: DataDemoElement },
+            { pathname: '/state-demo', element: StateDemoElement }
         ];
 
-        // Create and run the app
         const nativeJs = createNativeJs(container, routes);
         nativeJs.run();
 
-        // Expose for debugging
         window.nativeJs = nativeJs;
     </script>
 </body>

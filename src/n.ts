@@ -1,6 +1,7 @@
 import { NativeJsComponentAlreadyExistsError, NativeJsComponentNotExistsError } from "./error";
 import type { NativeJsComponentClass, NativeRoute, NativeRouteInput, NativeRouteList, NativeRouteListInput } from "./interfaces";
 import { createRouter, type NativeRouter } from "./router";
+import { NativeJsDataService } from "./service";
 import { NativeJsState } from "./state";
 
 /**
@@ -31,14 +32,23 @@ export abstract class NativeJsComponent extends HTMLElement {
 
     /**
      * Component state manager
-     * Provides unified API for attribute-based or storage-backed state
      */
     private _state: NativeJsState | null = null;
+
+    /**
+     * Data service for fetch/submit operations
+     */
+    private _data: NativeJsDataService | null = null;
 
     /**
      * Whether the template has been rendered
      */
     private _templateRendered: boolean = false;
+
+    /**
+     * Whether auto-fetch has been initiated
+     */
+    private _autoFetchInitiated: boolean = false;
 
     constructor() {
         super();
@@ -56,6 +66,17 @@ export abstract class NativeJsComponent extends HTMLElement {
     }
 
     /**
+     * Get the data service for fetch/submit operations
+     * Automatically bound to component state for easy data storage
+     */
+    get data(): NativeJsDataService {
+        if (!this._data) {
+            throw new Error('Data service is not available until component is connected to DOM');
+        }
+        return this._data;
+    }
+
+    /**
      * Native Web Component lifecycle - called when element is added to DOM.
      * Renders the template and calls onInit.
      */
@@ -63,7 +84,14 @@ export abstract class NativeJsComponent extends HTMLElement {
         // Initialize state manager
         this._state = new NativeJsState(this);
         
+        // Initialize data service with state binding
+        this._data = new NativeJsDataService({ state: this._state });
+        
         this.renderTemplate();
+        
+        // Handle auto-fetch if n-fetch attribute is present
+        this.handleAutoFetch();
+        
         this.onInit(this.urlPatternResult, this.routeState);
     }
 
@@ -81,6 +109,43 @@ export abstract class NativeJsComponent extends HTMLElement {
     setRouteData(urlPatternResult: URLPatternResult, state: object) {
         this.urlPatternResult = urlPatternResult;
         this.routeState = state;
+    }
+
+    /**
+     * Handle auto-fetch from n-fetch attribute
+     * Fetches data and stores in state under n-fetch-key (defaults to 'data')
+     */
+    private async handleAutoFetch(): Promise<void> {
+        if (this._autoFetchInitiated) return;
+        
+        const fetchUrl = this.getAttribute('n-fetch');
+        if (!fetchUrl || !this._data) return;
+        
+        this._autoFetchInitiated = true;
+        const stateKey = this.getAttribute('n-fetch-key') || 'data';
+        
+        // Set loading state
+        this._state?.set(`${stateKey}Loading`, true);
+        this._state?.set(`${stateKey}Error`, null);
+        
+        const response = await this._data.fetch(fetchUrl, { stateKey });
+        
+        // Update loading/error state
+        this._state?.set(`${stateKey}Loading`, false);
+        if (!response.ok) {
+            this._state?.set(`${stateKey}Error`, response.error);
+        }
+        
+        // Call onDataFetched hook
+        this.onDataFetched(stateKey, response.data, response.error);
+    }
+
+    /**
+     * Lifecycle hook called after auto-fetch completes
+     * Override to handle fetched data
+     */
+    public onDataFetched(stateKey: string, data: unknown, error: string | null) {
+        // Override in subclass
     }
 
     /**

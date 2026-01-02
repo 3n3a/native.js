@@ -1,0 +1,19 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "Getting Started with Native.js",
+      "content": "Learn how to build modern web applications with Native.js framework.",
+      "author": "Alice Johnson",
+      "date": "2026-01-01"
+    },
+    {
+      "id": 2,
+      "title": "Web Components Deep Dive",
+      "content": "Understanding Custom Elements and how Native.js leverages them.",
+      "author": "Bob Smith",
+      "date": "2026-01-02"
+    }
+  ]
+}
+

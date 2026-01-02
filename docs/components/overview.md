@@ -77,11 +77,22 @@ Components have built-in state management. See [State Management](../state/overv
 
 ```typescript
 onInit() {
-  // Read state
   const count = this.state.get<number>('count');
-  
-  // Write state
   this.state.set('count', count + 1);
+}
+```
+
+## Data Fetching
+
+Components have built-in data service. See [Data Fetching](../data/overview.md).
+
+```typescript
+async onInit() {
+  // Fetch and store in state
+  await this.data.fetch('/api/users', { stateKey: 'users' });
+  
+  // Submit data (not stored)
+  await this.data.submit('/api/form', { name: 'John' });
 }
 ```
 
