@@ -36,3 +36,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # custom
 build
 examples/lib
+
+# SQLite database
+examples/todo-app/data
