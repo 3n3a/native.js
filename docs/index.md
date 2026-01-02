@@ -32,5 +32,6 @@ app.run();
 
 - [Getting Started](./getting-started.md)
 - [Components](./components/overview.md)
+- [State Management](./state/overview.md)
 - [Routing](./routing/overview.md)
 

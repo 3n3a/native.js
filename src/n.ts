@@ -1,6 +1,7 @@
 import { NativeJsComponentAlreadyExistsError, NativeJsComponentNotExistsError } from "./error";
 import type { NativeJsComponentClass, NativeRoute, NativeRouteInput, NativeRouteList, NativeRouteListInput } from "./interfaces";
 import { createRouter, type NativeRouter } from "./router";
+import { NativeJsState } from "./state";
 
 /**
  * Base class for all Native.js components.
@@ -29,6 +30,12 @@ export abstract class NativeJsComponent extends HTMLElement {
     protected routeState: object = {};
 
     /**
+     * Component state manager
+     * Provides unified API for attribute-based or storage-backed state
+     */
+    private _state: NativeJsState | null = null;
+
+    /**
      * Whether the template has been rendered
      */
     private _templateRendered: boolean = false;
@@ -38,10 +45,24 @@ export abstract class NativeJsComponent extends HTMLElement {
     }
 
     /**
+     * Get the component state manager
+     * Available after the component is connected to the DOM
+     */
+    get state(): NativeJsState {
+        if (!this._state) {
+            throw new Error('State is not available until component is connected to DOM');
+        }
+        return this._state;
+    }
+
+    /**
      * Native Web Component lifecycle - called when element is added to DOM.
      * Renders the template and calls onInit.
      */
     connectedCallback() {
+        // Initialize state manager
+        this._state = new NativeJsState(this);
+        
         this.renderTemplate();
         this.onInit(this.urlPatternResult, this.routeState);
     }

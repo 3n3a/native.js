@@ -71,6 +71,20 @@ const btn = this.getChild('#my-button');
 const items = this.getChildren('.list-item');
 ```
 
+## State
+
+Components have built-in state management. See [State Management](../state/overview.md).
+
+```typescript
+onInit() {
+  // Read state
+  const count = this.state.get<number>('count');
+  
+  // Write state
+  this.state.set('count', count + 1);
+}
+```
+
 ## Shadow DOM
 
 Shadow DOM is disabled by default. Components render directly to the light DOM.
