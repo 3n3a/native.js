@@ -1,4 +1,4 @@
-import type { NativeJsElement } from "./n";
+import type { NativeJsComponent } from "./n";
 
 // Basic constructor type
 export type ClassType = new (...args: any[]) => any;
@@ -6,25 +6,21 @@ export type ClassType = new (...args: any[]) => any;
 // Constructor type that returns a specific type
 export type Constructor<T> = new (...args: any[]) => T;
 
-// Constructor type for classes extending a base class
-export type NativeJsElementConstructor<T extends NativeJsElement> = new (...args: any[]) => T;
-
-export interface NativeRouteInput<T extends NativeJsElement> {
-    pathname: string;
-    element: NativeJsElementConstructor<T>;
-}
-export interface NativeRoute {
-    pathname: string,
-    elementName: string
-    //callbackFn(urlPatternResult: URLPatternResult, state: object): void,
-}
-
-export type NativeRouteListInput<T extends NativeJsElement> = NativeRouteInput<T>[];
-export type NativeRouteList = NativeRoute[];
-
-export interface NativeJsElementOptions {
-    name: string;
+// Constructor type for component classes extending NativeJsComponent
+export type NativeJsComponentConstructor<T extends NativeJsComponent> = (new (...args: any[]) => T) & {
+    tagName: string;
     templateId: string;
-    host: HTMLElement;
-    htmlElement?: HTMLElement;
+};
+
+export interface NativeRouteInput<T extends NativeJsComponent> {
+    pathname: string;
+    element: NativeJsComponentConstructor<T>;
 }
+
+export interface NativeRoute {
+    pathname: string;
+    componentName: string;
+}
+
+export type NativeRouteListInput<T extends NativeJsComponent> = NativeRouteInput<T>[];
+export type NativeRouteList = NativeRoute[];

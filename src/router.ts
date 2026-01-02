@@ -1,58 +1,66 @@
 import { NativeURLChangeEvent } from "./event";
 import type { NativeRoute, NativeRouteList } from "./interfaces";
-import type { NativeJsElementRegistry } from "./n";
+import type { NativeJsComponentRegistry } from "./n";
 
-export function createRouter(registry: NativeJsElementRegistry, routes: NativeRouteList) {
-    return new NativeRouter(registry, routes);
+export function createRouter(registry: NativeJsComponentRegistry, routes: NativeRouteList, host?: HTMLElement) {
+    return new NativeRouter(registry, routes, host);
 }
 
 export class NativeRouter {
-    private registry: NativeJsElementRegistry;
+    private registry: NativeJsComponentRegistry;
     private patternToRoute: Map<URLPattern, NativeRoute>;
+    private host: HTMLElement;
 
-    constructor(registry: NativeJsElementRegistry, routes: NativeRouteList) {
+    constructor(registry: NativeJsComponentRegistry, routes: NativeRouteList, host?: HTMLElement) {
         this.registry = registry;
         this.patternToRoute = new Map();
+        this.host = host || document.body;
         this.compileRoutes(routes);
     }
 
+    /**
+     * Set the host element for rendering components
+     */
+    setHost(host: HTMLElement) {
+        this.host = host;
+    }
+
     start() {
-        const context = this;
-        // hanlde initial load
+        // Handle initial load
         this.handleRouteChange({});
 
-        // forwarding
+        // Handle browser back/forward
         window.addEventListener('popstate', (event) => {
-            context.signalURLChange(event.state || {});
-        })
+            this.signalURLChange(event.state || {});
+        });
         
+        // Handle internal navigation
         window.addEventListener('n-url-change', (event) => {
-            const event2 = event as NativeURLChangeEvent;
-            const currentState = event2.state || {};
-            context.handleRouteChange(currentState);
-            context.overrideLinkClicks();
+            const urlChangeEvent = event as NativeURLChangeEvent;
+            const currentState = urlChangeEvent.state || {};
+            this.handleRouteChange(currentState);
+            this.overrideLinkClicks();
         });
 
         this.overrideLinkClicks();
-
     }
 
     private compileRoutes(routes: NativeRouteList) {
         for (const route of routes) {
-            const currentPattern = new URLPattern({ pathname: route.pathname });
-            this.patternToRoute.set(currentPattern, route);
+            const pattern = new URLPattern({ pathname: route.pathname });
+            this.patternToRoute.set(pattern, route);
         }
     }
 
-    private findMatchingRoute(currentPathName: string): [NativeRoute, URLPatternResult]|null {
-        for (const currentPattern of this.patternToRoute.keys()) {
-            const result = currentPattern.exec({ pathname: currentPathName});
+    private findMatchingRoute(currentPathName: string): [NativeRoute, URLPatternResult] | null {
+        for (const pattern of this.patternToRoute.keys()) {
+            const result = pattern.exec({ pathname: currentPathName });
             if (result) {
-                const currentRoute = this.patternToRoute.get(currentPattern);
-                if (!currentRoute) {
-                    throw new Error('missing NativeRoute for matched path');
+                const route = this.patternToRoute.get(pattern);
+                if (!route) {
+                    throw new Error('Missing NativeRoute for matched path');
                 }
-                return [currentRoute, result];
+                return [route, result];
             }
         }
         return null;
@@ -61,30 +69,34 @@ export class NativeRouter {
     private handleRouteChange(currentState: object) {
         const currentURL = document.location;
         const matchingRouteResult = this.findMatchingRoute(currentURL.pathname);
+        
         if (matchingRouteResult) {
             const [currentRoute, urlPatternResult] = matchingRouteResult;
-            const element = this.registry.getElement(currentRoute.elementName);
-            element.render(urlPatternResult, currentState);
+            const component = this.registry.getComponent(currentRoute.componentName);
+            component.render(urlPatternResult, currentState, this.host);
         } else {
-            throw new Error('failed to find matching route');
+            throw new Error('Failed to find matching route');
         }
     }
 
     private overrideLinkClicks() {
-        const context = this;
         const links: HTMLAnchorElement[] = Array.from(document.querySelectorAll('a[n-href]'));
+        
         for (const link of links) {
-            link.addEventListener('click', (ev: PointerEvent) => {
+            // Skip if already processed
+            if (link.hasAttribute('n-href-processed')) continue;
+            link.setAttribute('n-href-processed', 'true');
+            
+            link.addEventListener('click', (ev: MouseEvent) => {
                 ev.preventDefault();
-                const target = ev.target as HTMLElement;
+                const target = ev.currentTarget as HTMLAnchorElement;
                 const href = target.getAttribute('n-href');
-                console.log('link clicked', href);
                 
                 if (!href) {
-                    throw new Error('no href on "a" element');
+                    throw new Error('No href on "a" element with n-href attribute');
                 }
-                context.navigateToURL(href);
-            })
+                this.navigateToURL(href);
+            });
         }
     }
 
@@ -95,7 +107,7 @@ export class NativeRouter {
     }
 
     private signalURLChange(state: object) {
-        const urlChangeEv = new NativeURLChangeEvent(state);
-        window.dispatchEvent(urlChangeEv);
+        const urlChangeEvent = new NativeURLChangeEvent(state);
+        window.dispatchEvent(urlChangeEvent);
     }
 }

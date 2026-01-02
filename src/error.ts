@@ -1,17 +1,17 @@
-export class NativeJsElementAlreadyExistsError extends Error {
-    /**
-     * NativeJsElementAlreadyExistsError (Wrapper for Error)
-     */
+export class NativeJsComponentAlreadyExistsError extends Error {
     constructor(message: string, options?: ErrorOptions) {
         super(message, options);
+        this.name = 'NativeJsComponentAlreadyExistsError';
     }
 }
 
-export class NativeJsElementNotExistsError extends Error {
-    /**
-     * NativeJsElementNotExistsError (Wrapper for Error)
-     */
+export class NativeJsComponentNotExistsError extends Error {
     constructor(message: string, options?: ErrorOptions) {
         super(message, options);
+        this.name = 'NativeJsComponentNotExistsError';
     }
 }
+
+// Legacy aliases for backwards compatibility
+export { NativeJsComponentAlreadyExistsError as NativeJsElementAlreadyExistsError };
+export { NativeJsComponentNotExistsError as NativeJsElementNotExistsError };

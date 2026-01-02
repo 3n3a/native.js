@@ -3,67 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hellow World | Native.js</title>
+    <title>Hello World | Native.js</title>
 </head>
 <body>
     <main id="app"></main>
 
     <template id="tpl-home">
         <h1 id="main-h1">Main Page</h1>
+        <a n-href="/hello-world">Go to Hello World</a>
     </template>
 
     <template id="tpl-hello-world">
-        <a n-href="/other-page">other page</a>
+        <h2>Hello World Page</h2>
+        <a n-href="/">Back to Home</a>
+        <a n-href="/other-page">Go to Other Page</a>
     </template>
 
     <template id="tpl-other-page">
-        <h2>Other page</h2>
+        <h2>Other Page</h2>
+        <a n-href="/">Back to Home</a>
     </template>
     
     <!-- Custom Implementation -->
     <script type="module">
-        import { createNativeJs, renderTemplate, NativeJsElement } from "/lib/index.js";
+        import { createNativeJs, NativeJsComponent } from "/lib/index.js";
+        
         const container = document.querySelector('#app');
 
-        class MainElement extends NativeJsElement {
-            constructor() {
-                super({
-                    name: 'main',
-                    templateId: 'tpl-home',
-                    host: container
-                });
-            }
+        // Main page component using Web Components
+        class MainElement extends NativeJsComponent {
+            static tagName = 'n-main';
+            static templateId = 'tpl-home';
 
-            onInit() {
-                console.log('initi captured fro main');
-                const h1 = super.getChild('#main-h1');
-                console.log(h1)
+            onInit(urlPatternResult, state) {
+                console.log('MainElement initialized');
+                const h1 = this.getChild('#main-h1');
                 if (h1) {
-                    h1.innerText = 'Main Page - Loaded'
+                    h1.innerText = 'Main Page - Loaded';
                 }
             }
         }
 
-        class HelloWorldElement extends NativeJsElement {
-            constructor() {
-                super({
-                    name: 'hello-world',
-                    templateId: 'tpl-hello-world',
-                    host: container
-                });
+        // Hello World component
+        class HelloWorldElement extends NativeJsComponent {
+            static tagName = 'n-hello-world';
+            static templateId = 'tpl-hello-world';
+
+            onInit(urlPatternResult, state) {
+                console.log('HelloWorldElement initialized');
             }
         }
 
-        class OtherPageElement extends NativeJsElement {
-            constructor() {
-                super({
-                    name: 'other-page',
-                    templateId: 'tpl-other-page',
-                    host: container
-                });
+        // Other Page component
+        class OtherPageElement extends NativeJsComponent {
+            static tagName = 'n-other-page';
+            static templateId = 'tpl-other-page';
+
+            onInit(urlPatternResult, state) {
+                console.log('OtherPageElement initialized');
             }
         }
 
+        // Define routes
         const routes = [
             {
                 pathname: '/',
@@ -77,10 +78,13 @@
                 pathname: '/other-page',
                 element: OtherPageElement
             }
-        ]
+        ];
+
+        // Create and run the app
         const nativeJs = createNativeJs(container, routes);
         nativeJs.run();
 
+        // Expose for debugging
         window.nativeJs = nativeJs;
     </script>
 </body>

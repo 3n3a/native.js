@@ -1,0 +1,46 @@
+---
+description: Documentation rules for Native.js framework
+globs: "docs/**/*.md"
+alwaysApply: false
+---
+
+# Documentation Rules
+
+## When to Write Documentation
+
+- Document every new feature when it is implemented
+- Update documentation when existing features change
+- Document breaking changes prominently
+
+## Documentation Structure
+
+All documentation lives in `./docs` directory following this structure:
+
+```
+docs/
+├── index.md              # Overview and quick start
+├── getting-started.md    # Installation and first steps
+├── components/           # Component-related docs
+│   └── *.md
+├── routing/              # Router-related docs
+│   └── *.md
+└── api/                  # API reference
+    └── *.md
+```
+
+## Documentation Format
+
+- Use standard Markdown
+- Keep explanations concise - avoid stating the obvious
+- Include code examples for every feature
+- Use TypeScript in all code examples
+- Structure each feature doc with:
+  1. Brief description (1-2 sentences max)
+  2. Code example
+  3. Configuration options (if any)
+
+## What NOT to Document
+
+- Implementation details that are self-explanatory from the code
+- Obvious behavior that any developer would expect
+- Internal/private APIs not meant for public use

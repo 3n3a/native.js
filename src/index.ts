@@ -1,5 +1,17 @@
 import { createRouter } from "./router";
-import { renderTemplate } from "./render";
-import { createNativeJs, NativeJsElement } from "./n";
+import { renderTemplate, renderFragment } from "./render";
+import { createNativeJs, NativeJsComponent, NativeJsComponentRegistry, createNativeJsComponentRegistry } from "./n";
 
-export { createRouter, renderTemplate, createNativeJs, NativeJsElement };
+// Main exports
+export { 
+    createRouter, 
+    renderTemplate, 
+    renderFragment,
+    createNativeJs, 
+    NativeJsComponent,
+    NativeJsComponentRegistry,
+    createNativeJsComponentRegistry
+};
+
+// Legacy alias for backwards compatibility
+export { NativeJsComponent as NativeJsElement };

@@ -1,0 +1,41 @@
+---
+description: Core framework rules for Native.js development
+globs: "src/**/*.ts, examples/**/*"
+alwaysApply: true
+---
+
+# Native.js Framework Rules
+
+## No External Libraries
+
+- Do NOT use any external JavaScript libraries
+- Use only native browser APIs supported by: Safari, Chrome, Firefox, Safari iOS, Chrome Android
+- Reference MDN (mdn.github.io) for API compatibility
+
+## Source Code
+
+- All framework code MUST be written in TypeScript
+- Source files live in `src/` directory
+- Use Bun bundler for compilation
+
+## Web Components
+
+- Use native Web Components API (Custom Elements v1)
+- Do NOT use Shadow DOM by default
+- Components should support children by default
+- Register custom elements with `n-` prefix
+
+## Examples
+
+- Every new feature MUST have a corresponding example
+- Examples live in `examples/` directory
+- Examples demonstrate real-world usage patterns
+
+## Browser Compatibility
+
+Before using any API, verify support on:
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Safari iOS (latest)
+- Chrome Android (latest)

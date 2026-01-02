@@ -1,0 +1,44 @@
+---
+description: Naming conventions for Native.js framework
+globs: "src/**/*.ts, examples/**/*.html, examples/**/*.ts"
+alwaysApply: true
+---
+
+# Naming Conventions
+
+## Custom Elements (Web Components)
+
+- All custom element tag names MUST be prefixed with `n-`
+- Examples: `<n-app>`, `<n-button>`, `<n-modal>`
+
+## Custom Attributes
+
+- All custom attributes MUST be prefixed with `n-`
+- Examples: `n-href`, `n-if`, `n-for`, `n-bind`
+
+## JavaScript/TypeScript Classes
+
+- All framework classes MUST be prefixed with `NativeJs`
+- Examples: `NativeJsComponent`, `NativeJsRouter`, `NativeJsApp`
+
+## Examples
+
+```html
+<!-- Custom element with custom attribute -->
+<n-button n-click="handleClick">Click me</n-button>
+
+<!-- Router link -->
+<a n-href="/about">About</a>
+```
+
+```typescript
+// Component class
+class NativeJsComponent extends HTMLElement {
+  // ...
+}
+
+// Custom component extending base
+class MyComponent extends NativeJsComponent {
+  // ...
+}
+```
