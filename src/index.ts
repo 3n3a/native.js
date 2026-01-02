@@ -15,6 +15,9 @@ import {
     registerDefaultComponents 
 } from "./components";
 
+// Utils
+import { escapeHtml, unescapeHtml, uniqueId, debounce, throttle } from "./utils";
+
 // Main exports
 export { 
     createRouter, 
@@ -35,7 +38,13 @@ export {
     NativeJsModal,
     NativeJsList,
     NativeJsDefaultComponents,
-    registerDefaultComponents
+    registerDefaultComponents,
+    // Utils
+    escapeHtml,
+    unescapeHtml,
+    uniqueId,
+    debounce,
+    throttle
 };
 
 // Type exports

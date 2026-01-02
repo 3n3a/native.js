@@ -1,4 +1,5 @@
 import { NativeJsComponent } from "../n";
+import { escapeHtml } from "../utils";
 
 /**
  * A list component for rendering dynamic lists of items.
@@ -151,21 +152,39 @@ export class NativeJsList extends NativeJsComponent {
     }
 
     /**
-     * Interpolate {{key}} patterns with data values
+     * Interpolate {{key}} patterns with data values (HTML-escaped)
+     * Use {{{key}}} for unescaped raw HTML
      */
     private interpolate(template: string, data: Record<string, unknown>): string {
-        return template.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (match, key) => {
-            const keys = key.split('.');
-            let value: unknown = data;
-            for (const k of keys) {
-                if (value && typeof value === 'object') {
-                    value = (value as Record<string, unknown>)[k];
-                } else {
-                    return match;
-                }
-            }
+        // First handle raw/unescaped {{{key}}}
+        let result = template.replace(/\{\{\{(\w+(?:\.\w+)*)\}\}\}/g, (match, key) => {
+            const value = this.getNestedValue(data, key);
             return value !== undefined ? String(value) : match;
         });
+        
+        // Then handle escaped {{key}}
+        result = result.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (match, key) => {
+            const value = this.getNestedValue(data, key);
+            return value !== undefined ? escapeHtml(String(value)) : match;
+        });
+        
+        return result;
+    }
+    
+    /**
+     * Get a nested value from an object using dot notation
+     */
+    private getNestedValue(data: Record<string, unknown>, key: string): unknown {
+        const keys = key.split('.');
+        let value: unknown = data;
+        for (const k of keys) {
+            if (value && typeof value === 'object') {
+                value = (value as Record<string, unknown>)[k];
+            } else {
+                return undefined;
+            }
+        }
+        return value;
     }
 
     /**
