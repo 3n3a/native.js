@@ -26,11 +26,25 @@ export const NativeJsDefaultComponents = [
     NativeJsList
 ];
 
+// Track which default components have been registered
+const registeredDefaults = new Set<string>();
+
 /**
- * Register all default components with a registry
+ * Register all default components.
+ * Can optionally pass a registry, or components will be registered directly.
  */
-export function registerDefaultComponents(registry: NativeJsComponentRegistry): void {
+export function registerDefaultComponents(registry?: NativeJsComponentRegistry): void {
     for (const component of NativeJsDefaultComponents) {
-        registry.registerComponentClass(component);
+        const tagName = component.tagName;
+        
+        if (registry) {
+            registry.registerComponentClass(component);
+        } else {
+            // Register directly with customElements if not already registered
+            if (!registeredDefaults.has(tagName) && !customElements.get(tagName)) {
+                customElements.define(tagName, component);
+                registeredDefaults.add(tagName);
+            }
+        }
     }
 }

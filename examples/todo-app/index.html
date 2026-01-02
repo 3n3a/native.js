@@ -176,12 +176,14 @@
         }
         
         /* Add form */
-        .add-form {
+        .add-form,
+        .add-form form {
             display: flex;
             gap: 8px;
             margin-bottom: 20px;
         }
         
+        .add-form form { margin-bottom: 0; }
         .add-form input { flex: 1; }
         
         /* List items */
@@ -380,9 +382,9 @@
         <div class="card">
             <n-list id="todos-list" n-empty-text="No todos yet">
                 <template n-item>
-                    <div class="todo-item" data-id="{{id}}">
-                        <input type="checkbox" class="todo-checkbox" data-id="{{id}}" {{checkedAttr}}>
-                        <span class="todo-text {{completedClass}}">{{text}}</span>
+                    <div class="todo-item" data-id="{{id}}" data-completed="{{completed}}">
+                        <input type="checkbox" class="todo-checkbox" data-id="{{id}}">
+                        <span class="todo-text">{{text}}</span>
                         <button class="btn-delete delete-todo-btn" data-id="{{id}}">×</button>
                     </div>
                 </template>
@@ -662,13 +664,16 @@
                 this.getChild('.list-title-input').value = result.data.list.name;
                 
                 if (result.data.todos) {
-                    // Transform todos for template
-                    const items = result.data.todos.map(todo => ({
-                        ...todo,
-                        checkedAttr: todo.completed ? 'checked' : '',
-                        completedClass: todo.completed ? 'completed' : ''
-                    }));
-                    this.todosEl.setItems(items);
+                    this.todosEl.setItems(result.data.todos);
+                    
+                    // Set checkbox states and completed class after render
+                    this.todosEl.querySelectorAll('.todo-item').forEach(item => {
+                        const isCompleted = item.dataset.completed === '1';
+                        const checkbox = item.querySelector('.todo-checkbox');
+                        const text = item.querySelector('.todo-text');
+                        if (checkbox) checkbox.checked = isCompleted;
+                        if (text && isCompleted) text.classList.add('completed');
+                    });
                 } else {
                     this.todosEl.setItems([]);
                 }
