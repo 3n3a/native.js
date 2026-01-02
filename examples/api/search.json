@@ -1,0 +1,10 @@
+{
+  "results": [
+    { "id": 1, "title": "Getting Started Guide", "type": "documentation" },
+    { "id": 2, "title": "Component API Reference", "type": "api" },
+    { "id": 3, "title": "State Management Tutorial", "type": "tutorial" }
+  ],
+  "total": 3,
+  "query": "native"
+}
+

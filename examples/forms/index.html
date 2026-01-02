@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Components | Native.js</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 2rem; 
+            max-width: 800px; 
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        h1 { border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
+        h2 { margin-top: 2.5rem; color: #444; }
+        
+        /* Form Styling */
+        n-fetch-form, n-submit-form {
+            display: block;
+            margin: 1rem 0;
+        }
+        n-fetch-form form, n-submit-form form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-width: 400px;
+        }
+        n-fetch-form form {
+            flex-direction: row;
+            max-width: 100%;
+        }
+        n-fetch-form input[type="text"],
+        n-fetch-form input[type="search"] {
+            flex: 1;
+        }
+        input, textarea, select {
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover { background: #0055aa; }
+        button:disabled { background: #999; cursor: not-allowed; }
+        
+        /* Message Styling */
+        .n-form-message {
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+        .n-form-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .n-form-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Results Styling */
+        .search-results {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .search-results.loading {
+            color: #666;
+            font-style: italic;
+        }
+        .result-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-type {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            background: #e9ecef;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+        
+        /* Code Example */
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
+        code {
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+        }
+        
+        .example-section {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Native.js Form Components</h1>
+    <p>Pre-built form components for common patterns. Just define the URL and fields!</p>
+
+    <!-- ================================ -->
+    <!-- Fetch Form: Search Example -->
+    <!-- ================================ -->
+    <h2>Search / Filter Form (<code>&lt;n-fetch-form&gt;</code>)</h2>
+    <p>Use for search fields, filters, or any form that fetches data based on input.</p>
+    
+    <div class="example-section">
+        <h3>Live Example</h3>
+        
+        <n-fetch-form n-action="../api/search.json" n-state-key="searchResults" n-target="search-results">
+            <input type="search" name="q" placeholder="Search documentation..." required>
+            <button type="submit">Search</button>
+        </n-fetch-form>
+        
+        <div id="search-results" class="search-results">
+            <em>Enter a search term and click Search</em>
+        </div>
+    </div>
+
+    <pre><code>&lt;n-fetch-form n-action="/api/search" n-state-key="searchResults" n-target="search-results"&gt;
+    &lt;input type="search" name="q" placeholder="Search..."&gt;
+    &lt;button type="submit"&gt;Search&lt;/button&gt;
+&lt;/n-fetch-form&gt;
+
+&lt;div id="search-results"&gt;&lt;/div&gt;</code></pre>
+
+    <h4>Attributes</h4>
+    <ul>
+        <li><code>n-action</code> - URL to fetch from (required)</li>
+        <li><code>n-state-key</code> - Key to store results in state (default: "data")</li>
+        <li><code>n-target</code> - ID of element to receive <code>n-data-received</code> event</li>
+    </ul>
+
+    <!-- ================================ -->
+    <!-- Fetch Form: Filter Example -->
+    <!-- ================================ -->
+    <h2>Filter Form Example</h2>
+    
+    <div class="example-section">
+        <h3>Live Example</h3>
+        
+        <n-fetch-form n-action="../api/users.json" n-state-key="filteredUsers" n-target="user-results">
+            <select name="role">
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+            </select>
+            <input type="text" name="search" placeholder="Filter by name...">
+            <button type="submit">Filter</button>
+        </n-fetch-form>
+        
+        <div id="user-results" class="search-results">
+            <em>Apply filters to see results</em>
+        </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- Submit Form: Contact Example -->
+    <!-- ================================ -->
+    <h2>Contact Form (<code>&lt;n-submit-form&gt;</code>)</h2>
+    <p>Use for contact forms, registration, or any form that submits data.</p>
+    
+    <div class="example-section">
+        <h3>Live Example</h3>
+        
+        <n-submit-form 
+            n-action="../api/submit-response.json" 
+            n-method="POST"
+            n-success-message="Thank you! Your message has been sent."
+            n-error-message="Sorry, something went wrong. Please try again.">
+            <input type="text" name="name" placeholder="Your Name" required>
+            <input type="email" name="email" placeholder="Your Email" required>
+            <select name="subject">
+                <option value="general">General Inquiry</option>
+                <option value="support">Support</option>
+                <option value="feedback">Feedback</option>
+            </select>
+            <textarea name="message" rows="4" placeholder="Your Message" required></textarea>
+            <button type="submit">Send Message</button>
+        </n-submit-form>
+    </div>
+
+    <pre><code>&lt;n-submit-form 
+    n-action="/api/contact" 
+    n-method="POST"
+    n-success-message="Thank you! Your message has been sent."&gt;
+    
+    &lt;input type="text" name="name" placeholder="Name" required&gt;
+    &lt;input type="email" name="email" placeholder="Email" required&gt;
+    &lt;textarea name="message" placeholder="Message"&gt;&lt;/textarea&gt;
+    &lt;button type="submit"&gt;Send&lt;/button&gt;
+&lt;/n-submit-form&gt;</code></pre>
+
+    <h4>Attributes</h4>
+    <ul>
+        <li><code>n-action</code> - URL to submit to (required)</li>
+        <li><code>n-method</code> - HTTP method: POST, PUT, PATCH, DELETE (default: POST)</li>
+        <li><code>n-reset</code> - Reset form after success (default: true)</li>
+        <li><code>n-success-message</code> - Message shown on success</li>
+        <li><code>n-error-message</code> - Message shown on error</li>
+    </ul>
+
+    <!-- ================================ -->
+    <!-- Submit Form: Registration Example -->
+    <!-- ================================ -->
+    <h2>Registration Form Example</h2>
+    
+    <div class="example-section">
+        <h3>Live Example</h3>
+        
+        <n-submit-form 
+            n-action="../api/submit-response.json" 
+            n-method="POST"
+            n-success-message="Account created! Check your email to verify."
+            n-reset="true">
+            <input type="text" name="username" placeholder="Username" required minlength="3">
+            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="password" name="password" placeholder="Password" required minlength="8">
+            <input type="password" name="password_confirm" placeholder="Confirm Password" required>
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="terms" required>
+                I agree to the Terms of Service
+            </label>
+            <button type="submit">Create Account</button>
+        </n-submit-form>
+    </div>
+
+    <!-- ================================ -->
+    <!-- Events Example -->
+    <!-- ================================ -->
+    <h2>Working with Events</h2>
+    <p>Both form components dispatch events you can listen to:</p>
+    
+    <pre><code>// Fetch Form Events
+document.querySelector('n-fetch-form').addEventListener('n-fetch-success', (e) => {
+    console.log('Data received:', e.detail.data);
+});
+
+document.querySelector('n-fetch-form').addEventListener('n-fetch-error', (e) => {
+    console.log('Fetch failed:', e.detail.error);
+});
+
+// Submit Form Events  
+document.querySelector('n-submit-form').addEventListener('n-submit-success', (e) => {
+    console.log('Submitted:', e.detail.data);
+});
+
+document.querySelector('n-submit-form').addEventListener('n-submit-error', (e) => {
+    console.log('Submit failed:', e.detail.error);
+});</code></pre>
+
+    <script type="module">
+        import { 
+            createNativeJsComponentRegistry, 
+            registerDefaultComponents 
+        } from "../lib/index.js";
+        
+        // Register all default components (includes n-fetch-form and n-submit-form)
+        const registry = createNativeJsComponentRegistry();
+        registerDefaultComponents(registry);
+        
+        // Listen for search results and display them
+        document.getElementById('search-results').addEventListener('n-data-received', (e) => {
+            const container = e.target;
+            const data = e.detail.data;
+            
+            if (data?.results?.length > 0) {
+                container.innerHTML = data.results.map(item => `
+                    <div class="result-item">
+                        <strong>${item.title}</strong>
+                        <span class="result-type">${item.type}</span>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<em>No results found</em>';
+            }
+        });
+        
+        // Listen for user filter results
+        document.getElementById('user-results').addEventListener('n-data-received', (e) => {
+            const container = e.target;
+            const data = e.detail.data;
+            
+            if (data?.users?.length > 0) {
+                container.innerHTML = data.users.map(user => `
+                    <div class="result-item">
+                        <strong>${user.name}</strong> - ${user.email}
+                        <span class="result-type">${user.role}</span>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<em>No users found</em>';
+            }
+        });
+        
+        // Log all form events for demonstration
+        document.querySelectorAll('n-fetch-form').forEach(form => {
+            form.addEventListener('n-fetch-start', () => console.log('Fetch started'));
+            form.addEventListener('n-fetch-success', (e) => console.log('Fetch success:', e.detail));
+            form.addEventListener('n-fetch-error', (e) => console.log('Fetch error:', e.detail));
+        });
+        
+        document.querySelectorAll('n-submit-form').forEach(form => {
+            form.addEventListener('n-submit-start', (e) => console.log('Submit started:', e.detail));
+            form.addEventListener('n-submit-success', (e) => console.log('Submit success:', e.detail));
+            form.addEventListener('n-submit-error', (e) => console.log('Submit error:', e.detail));
+        });
+    </script>
+</body>
+</html>
+

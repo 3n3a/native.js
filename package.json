@@ -5,7 +5,8 @@
   "scripts": {
     "build": "bun run build.ts",
     "predev": "bun run build.ts && bun run prep.ts",
-    "dev": "bun x serve -s examples"
+    "dev": "bun run serve.ts",
+    "dev:static": "bun x serve examples"
   },
   "devDependencies": {
     "@types/bun": "^1.3.5"

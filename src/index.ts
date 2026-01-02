@@ -5,6 +5,14 @@ import { NativeJsState } from "./state";
 import { NativeJsStorage, createNativeJsStorage } from "./storage";
 import { NativeJsDataService, createNativeJsDataService } from "./service";
 
+// Components library
+import { 
+    NativeJsFetchForm, 
+    NativeJsSubmitForm, 
+    NativeJsDefaultComponents,
+    registerDefaultComponents 
+} from "./components";
+
 // Main exports
 export { 
     createRouter, 
@@ -18,7 +26,12 @@ export {
     NativeJsStorage,
     createNativeJsStorage,
     NativeJsDataService,
-    createNativeJsDataService
+    createNativeJsDataService,
+    // Components
+    NativeJsFetchForm,
+    NativeJsSubmitForm,
+    NativeJsDefaultComponents,
+    registerDefaultComponents
 };
 
 // Type exports

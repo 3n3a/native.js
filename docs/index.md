@@ -32,6 +32,7 @@ app.run();
 
 - [Getting Started](./getting-started.md)
 - [Components](./components/overview.md)
+- [Form Components](./components/forms.md)
 - [State Management](./state/overview.md)
 - [Data Fetching](./data/overview.md)
 - [Routing](./routing/overview.md)
