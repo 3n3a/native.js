@@ -10,6 +10,7 @@ import { NativeJsDataService } from "../service";
  * - n-method: HTTP method (default: GET)
  * - n-target: ID of element to dispatch result event to
  * - n-state-key: Key to store result in state (default: 'data')
+ * - n-credentials: Credentials mode ('omit', 'same-origin', 'include')
  * 
  * Events:
  * - n-fetch-start: Dispatched when fetch begins
@@ -30,7 +31,11 @@ export class NativeJsFetchForm extends NativeJsComponent {
 
     override connectedCallback() {
         super.connectedCallback();
-        this.dataService = new NativeJsDataService({ state: this.state });
+        const credentials = this.getAttribute('n-credentials') as 'omit' | 'same-origin' | 'include' | null;
+        this.dataService = new NativeJsDataService({ 
+            state: this.state,
+            credentials: credentials || 'same-origin'
+        });
         this.setupForm();
     }
 
@@ -117,4 +122,3 @@ export class NativeJsFetchForm extends NativeJsComponent {
         }
     }
 }
-

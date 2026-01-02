@@ -11,6 +11,8 @@ import { NativeJsDataService, type NativeJsHttpMethod } from "../service";
  * - n-reset: Reset form after successful submit (default: true)
  * - n-success-message: Message to show on success
  * - n-error-message: Message to show on error
+ * - n-redirect: URL to redirect to on success
+ * - n-credentials: Credentials mode ('omit', 'same-origin', 'include')
  * 
  * Events:
  * - n-submit-start: Dispatched when submit begins
@@ -34,7 +36,10 @@ export class NativeJsSubmitForm extends NativeJsComponent {
 
     override connectedCallback() {
         super.connectedCallback();
-        this.dataService = new NativeJsDataService();
+        const credentials = this.getAttribute('n-credentials') as 'omit' | 'same-origin' | 'include' | null;
+        this.dataService = new NativeJsDataService({ 
+            credentials: credentials || 'same-origin' 
+        });
         this.setupForm();
     }
 
@@ -108,6 +113,7 @@ export class NativeJsSubmitForm extends NativeJsComponent {
 
         const method = (this.getAttribute('n-method') || 'POST').toUpperCase() as NativeJsHttpMethod;
         const shouldReset = this.getAttribute('n-reset') !== 'false';
+        const redirectUrl = this.getAttribute('n-redirect');
 
         // Collect form data as object
         const formData = new FormData(form);
@@ -141,8 +147,10 @@ export class NativeJsSubmitForm extends NativeJsComponent {
             this.setFormLoading(form, false);
 
             if (response.ok) {
-                const successMessage = this.getAttribute('n-success-message') || 'Submitted successfully!';
-                this.showMessage(successMessage, false);
+                const successMessage = this.getAttribute('n-success-message');
+                if (successMessage) {
+                    this.showMessage(successMessage, false);
+                }
 
                 if (shouldReset) {
                     form.reset();
@@ -152,6 +160,11 @@ export class NativeJsSubmitForm extends NativeJsComponent {
                     bubbles: true,
                     detail: { data: response.data }
                 }));
+
+                // Redirect if specified
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
             } else {
                 const errorMessage = this.getAttribute('n-error-message') || response.error || 'Submission failed';
                 this.showMessage(errorMessage, true);
@@ -174,4 +187,3 @@ export class NativeJsSubmitForm extends NativeJsComponent {
         }
     }
 }
-

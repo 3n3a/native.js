@@ -31,6 +31,7 @@ A form that fetches data based on inputs. Use for search, filters, queries.
 | `n-action` | URL to fetch from (required) | - |
 | `n-state-key` | Key to store results in state | `data` |
 | `n-target` | ID of element to receive `n-data-received` event | - |
+| `n-credentials` | Credentials mode: `omit`, `same-origin`, `include` | `same-origin` |
 
 ### Events
 
@@ -74,8 +75,10 @@ A form that submits data. Use for contact forms, registration, data entry.
 | `n-action` | URL to submit to (required) | - |
 | `n-method` | HTTP method (POST, PUT, PATCH, DELETE) | `POST` |
 | `n-reset` | Reset form after success | `true` |
-| `n-success-message` | Message on success | `Submitted successfully!` |
+| `n-success-message` | Message on success | - |
 | `n-error-message` | Message on error | Error from response |
+| `n-redirect` | URL to redirect to on success | - |
+| `n-credentials` | Credentials mode: `omit`, `same-origin`, `include` | `same-origin` |
 
 ### Events
 
@@ -94,4 +97,3 @@ The components add CSS classes for styling:
 .n-form-success { /* success state */ }
 .n-form-error { /* error state */ }
 ```
-

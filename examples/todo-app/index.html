@@ -123,6 +123,22 @@
             font-size: 0.875rem;
         }
         
+        /* n-submit-form messages */
+        .n-form-message {
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .n-form-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .n-form-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
         /* App Layout */
         .app-header {
             display: flex;
@@ -165,13 +181,15 @@
             color: #333;
         }
         
-        .new-list-form {
+        .new-list-form,
+        n-submit-form[n-action="/api/lists"] form {
             display: flex;
             gap: 0.5rem;
             margin-bottom: 1rem;
         }
         
-        .new-list-form input { flex: 1; }
+        .new-list-form input,
+        n-submit-form[n-action="/api/lists"] input { flex: 1; }
         
         .list-item {
             display: flex;
@@ -199,7 +217,8 @@
             gap: 0.5rem;
         }
         
-        .empty-state {
+        /* n-list empty state */
+        .n-list-empty {
             text-align: center;
             padding: 2rem;
             color: #999;
@@ -239,13 +258,15 @@
             border-bottom-color: #667eea;
         }
         
-        .new-todo-form {
+        .new-todo-form,
+        n-submit-form.new-todo-form form {
             display: flex;
             gap: 0.5rem;
             margin-bottom: 1rem;
         }
         
-        .new-todo-form input { flex: 1; }
+        .new-todo-form input,
+        n-submit-form.new-todo-form input { flex: 1; }
         
         .todo-item {
             display: flex;
@@ -279,35 +300,21 @@
             color: #666;
         }
         
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
+        /* Native.js Modal customization */
+        n-modal {
+            --n-modal-bg: white;
+            --n-modal-radius: 12px;
+            --n-modal-max-width: 400px;
+            --n-modal-padding: 1.5rem;
+            --n-modal-border: #eee;
         }
         
-        .modal {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            max-width: 400px;
-            width: 90%;
+        n-modal .n-modal-title {
+            color: #333;
         }
         
-        .modal h3 { margin-bottom: 1rem; }
-        
-        .modal-actions {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: flex-end;
-            margin-top: 1rem;
+        n-modal .n-modal-footer button {
+            margin-left: 0.5rem;
         }
     </style>
 </head>
@@ -326,20 +333,28 @@
             
             <div class="error-message" style="display: none;"></div>
             
-            <!-- Login Form -->
-            <form class="auth-form active" id="login-form">
+            <!-- Login Form using n-submit-form -->
+            <n-submit-form 
+                class="auth-form active" 
+                id="login-form"
+                n-action="/api/login"
+                n-reset="false">
                 <input type="text" name="username" placeholder="Username" required>
                 <input type="password" name="password" placeholder="Password" required>
                 <button type="submit" class="btn-primary">Login</button>
-            </form>
+            </n-submit-form>
             
-            <!-- Register Form -->
-            <form class="auth-form" id="register-form">
+            <!-- Register Form using n-submit-form -->
+            <n-submit-form 
+                class="auth-form" 
+                id="register-form"
+                n-action="/api/register"
+                n-reset="false">
                 <input type="text" name="username" placeholder="Username" required minlength="3">
                 <input type="password" name="password" placeholder="Password (min 4 chars)" required minlength="4">
                 <input type="password" name="password_confirm" placeholder="Confirm Password" required>
                 <button type="submit" class="btn-primary">Create Account</button>
-            </form>
+            </n-submit-form>
         </div>
     </template>
 
@@ -354,14 +369,26 @@
         </div>
         
         <div class="lists-container">
-            <form class="new-list-form">
+            <!-- Create List Form using n-submit-form -->
+            <n-submit-form 
+                n-action="/api/lists" 
+                class="new-list-form"
+                n-success-message="">
                 <input type="text" name="name" placeholder="New list name..." required>
                 <button type="submit" class="btn-primary">Add List</button>
-            </form>
+            </n-submit-form>
             
-            <div class="lists-content">
-                <div class="loading">Loading lists...</div>
-            </div>
+            <!-- Lists using n-list component -->
+            <n-list id="lists-list" n-empty-text="No lists yet. Create one above!">
+                <template n-item>
+                    <div class="list-item" data-id="{{id}}">
+                        <span class="list-item-name">{{name}}</span>
+                        <div class="list-item-actions">
+                            <button class="btn-danger btn-small delete-btn" data-id="{{id}}">🗑️</button>
+                        </div>
+                    </div>
+                </template>
+            </n-list>
         </div>
     </template>
 
@@ -384,31 +411,47 @@
                 <button class="btn-danger btn-small delete-list-btn">Delete List</button>
             </div>
             
-            <form class="new-todo-form">
+            <!-- Create Todo Form using n-submit-form -->
+            <n-submit-form 
+                class="new-todo-form"
+                n-action=""
+                n-success-message="">
                 <input type="text" name="text" placeholder="Add a new todo..." required>
                 <button type="submit" class="btn-primary">Add</button>
-            </form>
+            </n-submit-form>
             
-            <div class="todos-content">
-                <div class="loading">Loading todos...</div>
-            </div>
+            <!-- Todos using n-list component -->
+            <n-list id="todos-list" n-empty-text="No todos yet. Add one above!">
+                <template n-item>
+                    <div class="todo-item" data-id="{{id}}">
+                        <input type="checkbox" class="todo-checkbox" data-id="{{id}}">
+                        <span class="todo-text">{{text}}</span>
+                        <button class="btn-secondary btn-small delete-todo-btn" data-id="{{id}}">🗑️</button>
+                    </div>
+                </template>
+            </n-list>
         </div>
         
-        <!-- Delete Confirmation Modal -->
-        <div class="modal-overlay" style="display: none;">
-            <div class="modal">
-                <h3>Delete List?</h3>
-                <p>This will permanently delete the list and all its todos.</p>
-                <div class="modal-actions">
-                    <button class="btn-secondary cancel-delete">Cancel</button>
-                    <button class="btn-danger confirm-delete">Delete</button>
-                </div>
+        <!-- Delete Confirmation Modal using n-modal -->
+        <n-modal id="delete-modal" n-title="Delete List?" n-closable="true">
+            <p>This will permanently delete the list and all its todos.</p>
+            <div n-slot="footer">
+                <button class="btn-secondary" n-modal-cancel>Cancel</button>
+                <button class="btn-danger" n-modal-confirm>Delete</button>
             </div>
-        </div>
+        </n-modal>
     </template>
 
     <script type="module">
-        import { createNativeJs, NativeJsComponent, createNativeJsComponentRegistry, createNativeJsDataService } from "../lib/index.js";
+        import { 
+            createNativeJs, 
+            NativeJsComponent, 
+            createNativeJsComponentRegistry,
+            createNativeJsDataService,
+            registerDefaultComponents,
+            NativeJsModal,
+            NativeJsList
+        } from "../lib/index.js";
         
         const container = document.querySelector('#app');
         
@@ -458,8 +501,31 @@
                 const loginForm = this.getChild('#login-form');
                 const registerForm = this.getChild('#register-form');
                 
-                loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-                registerForm.addEventListener('submit', (e) => this.handleRegister(e));
+                // Handle login form success/error via n-submit-form events
+                loginForm.addEventListener('n-submit-success', () => {
+                    window.location.href = '/lists';
+                });
+                
+                loginForm.addEventListener('n-submit-error', (e) => {
+                    this.showError(e.detail.error || 'Login failed');
+                });
+                
+                // Handle register form - need to validate password match first
+                registerForm.addEventListener('n-submit-start', (e) => {
+                    const data = e.detail.data;
+                    if (data.password !== data.password_confirm) {
+                        e.preventDefault();
+                        this.showError('Passwords do not match');
+                    }
+                });
+                
+                registerForm.addEventListener('n-submit-success', () => {
+                    window.location.href = '/lists';
+                });
+                
+                registerForm.addEventListener('n-submit-error', (e) => {
+                    this.showError(e.detail.error || 'Registration failed');
+                });
             }
             
             showError(message) {
@@ -472,56 +538,15 @@
                 const errorEl = this.getChild('.error-message');
                 errorEl.style.display = 'none';
             }
-            
-            async handleLogin(e) {
-                e.preventDefault();
-                const form = e.target;
-                const formData = new FormData(form);
-                
-                // Using Native.js data service
-                const result = await this.data.post('/api/login', {
-                    username: formData.get('username'),
-                    password: formData.get('password')
-                });
-                
-                if (!result.ok) {
-                    this.showError(result.error || 'Login failed');
-                } else {
-                    window.location.href = '/lists';
-                }
-            }
-            
-            async handleRegister(e) {
-                e.preventDefault();
-                const form = e.target;
-                const formData = new FormData(form);
-                
-                const password = formData.get('password');
-                const passwordConfirm = formData.get('password_confirm');
-                
-                if (password !== passwordConfirm) {
-                    this.showError('Passwords do not match');
-                    return;
-                }
-                
-                // Using Native.js data service
-                const result = await this.data.post('/api/register', {
-                    username: formData.get('username'),
-                    password: password
-                });
-                
-                if (!result.ok) {
-                    this.showError(result.error || 'Registration failed');
-                } else {
-                    window.location.href = '/lists';
-                }
-            }
         }
         
         // ==================== LISTS COMPONENT ====================
         class ListsPage extends NativeJsComponent {
             static tagName = 'n-lists-page';
             static templateId = 'tpl-lists';
+            
+            /** @type {NativeJsList} */
+            listComponent = null;
             
             async onInit() {
                 const user = await checkAuth();
@@ -532,7 +557,32 @@
                 
                 this.getChild('.username').textContent = user.username;
                 this.getChild('.logout-btn').addEventListener('click', () => this.logout());
-                this.getChild('.new-list-form').addEventListener('submit', (e) => this.createList(e));
+                
+                // Get the n-list component
+                this.listComponent = this.getChild('#lists-list');
+                
+                // Setup form submission handler
+                const createForm = this.getChild('n-submit-form');
+                createForm.addEventListener('n-submit-success', () => {
+                    this.loadLists();
+                });
+                
+                // Setup list click handlers
+                this.listComponent.addEventListener('n-item-click', (e) => {
+                    const { item, originalEvent } = e.detail;
+                    // Don't navigate if clicking delete button
+                    if (!originalEvent.target.classList.contains('delete-btn')) {
+                        window.location.href = `/list/${item.id}`;
+                    }
+                });
+                
+                // Setup delete buttons via event delegation
+                this.listComponent.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-btn')) {
+                        e.stopPropagation();
+                        this.deleteList(e.target.dataset.id);
+                    }
+                });
                 
                 this.loadLists();
             }
@@ -543,69 +593,20 @@
             }
             
             async loadLists() {
-                const content = this.getChild('.lists-content');
-                
-                // Using Native.js data service with state storage
                 const result = await this.data.fetch('/api/lists', { stateKey: 'lists' });
                 
-                if (result.ok && result.data?.lists?.length > 0) {
-                    content.innerHTML = result.data.lists.map(list => `
-                        <div class="list-item" data-id="${list.id}">
-                            <span class="list-item-name">${this.escapeHtml(list.name)}</span>
-                            <div class="list-item-actions">
-                                <button class="btn-danger btn-small delete-btn" data-id="${list.id}">🗑️</button>
-                            </div>
-                        </div>
-                    `).join('');
-                    
-                    // Click to open list
-                    this.getChildren('.list-item').forEach(item => {
-                        item.addEventListener('click', (e) => {
-                            if (!e.target.classList.contains('delete-btn')) {
-                                window.location.href = `/list/${item.dataset.id}`;
-                            }
-                        });
-                    });
-                    
-                    // Delete buttons
-                    this.getChildren('.delete-btn').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            this.deleteList(btn.dataset.id);
-                        });
-                    });
+                if (result.ok && result.data?.lists) {
+                    this.listComponent.setItems(result.data.lists);
                 } else {
-                    content.innerHTML = '<div class="empty-state">No lists yet. Create one above!</div>';
+                    this.listComponent.setItems([]);
                 }
-            }
-            
-            async createList(e) {
-                e.preventDefault();
-                const form = e.target;
-                const input = form.querySelector('input');
-                const name = input.value.trim();
-                
-                if (!name) return;
-                
-                // Using Native.js data service
-                await this.data.post('/api/lists', { name });
-                
-                input.value = '';
-                this.loadLists();
             }
             
             async deleteList(id) {
                 if (confirm('Delete this list and all its todos?')) {
-                    // Using Native.js data service
                     await this.data.delete(`/api/lists/${id}`);
                     this.loadLists();
                 }
-            }
-            
-            escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
             }
         }
         
@@ -615,6 +616,10 @@
             static templateId = 'tpl-todos';
             
             listId = null;
+            /** @type {NativeJsList} */
+            todosComponent = null;
+            /** @type {NativeJsModal} */
+            deleteModal = null;
             
             async onInit(urlPatternResult) {
                 const user = await checkAuth();
@@ -632,8 +637,7 @@
                 this.getChild('.username').textContent = user.username;
                 this.getChild('.logout-btn').addEventListener('click', () => this.logout());
                 this.getChild('.back-btn').addEventListener('click', () => window.location.href = '/lists');
-                this.getChild('.new-todo-form').addEventListener('submit', (e) => this.createTodo(e));
-                this.getChild('.delete-list-btn').addEventListener('click', () => this.showDeleteModal());
+                this.getChild('.delete-list-btn').addEventListener('click', () => this.deleteModal.open());
                 
                 // List name editing
                 const titleInput = this.getChild('.list-title-input');
@@ -645,9 +649,33 @@
                     }
                 });
                 
-                // Modal
-                this.getChild('.cancel-delete').addEventListener('click', () => this.hideDeleteModal());
-                this.getChild('.confirm-delete').addEventListener('click', () => this.deleteList());
+                // Get the n-list component for todos
+                this.todosComponent = this.getChild('#todos-list');
+                
+                // Get and setup the modal
+                this.deleteModal = this.getChild('#delete-modal');
+                this.deleteModal.addEventListener('n-modal-confirm', () => this.deleteList());
+                
+                // Setup the create todo form - set dynamic action URL
+                const createForm = this.getChild('n-submit-form');
+                createForm.setAttribute('n-action', `/api/lists/${this.listId}/todos`);
+                createForm.addEventListener('n-submit-success', () => {
+                    this.loadTodos();
+                });
+                
+                // Setup todo item interactions via event delegation
+                this.todosComponent.addEventListener('click', (e) => {
+                    const todoItem = e.target.closest('.todo-item');
+                    if (!todoItem) return;
+                    
+                    const todoId = todoItem.dataset.id;
+                    
+                    if (e.target.classList.contains('todo-checkbox')) {
+                        this.toggleTodo(todoId);
+                    } else if (e.target.classList.contains('delete-todo-btn')) {
+                        this.deleteTodo(todoId);
+                    }
+                });
                 
                 this.loadTodos();
             }
@@ -657,18 +685,7 @@
                 window.location.href = '/';
             }
             
-            showDeleteModal() {
-                this.getChild('.modal-overlay').style.display = 'flex';
-            }
-            
-            hideDeleteModal() {
-                this.getChild('.modal-overlay').style.display = 'none';
-            }
-            
             async loadTodos() {
-                const content = this.getChild('.todos-content');
-                
-                // Using Native.js data service with state storage
                 const result = await this.data.fetch(`/api/lists/${this.listId}/todos`, { stateKey: 'todos' });
                 
                 if (!result.ok) {
@@ -679,58 +696,35 @@
                 // Set list name
                 this.getChild('.list-title-input').value = result.data.list.name;
                 
-                if (result.data?.todos?.length > 0) {
-                    content.innerHTML = result.data.todos.map(todo => `
-                        <div class="todo-item" data-id="${todo.id}">
-                            <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
-                            <span class="todo-text ${todo.completed ? 'completed' : ''}">${this.escapeHtml(todo.text)}</span>
-                            <button class="btn-secondary btn-small delete-todo-btn">🗑️</button>
-                        </div>
-                    `).join('');
-                    
-                    // Toggle checkboxes
-                    this.getChildren('.todo-checkbox').forEach(checkbox => {
-                        checkbox.addEventListener('change', () => {
-                            const todoId = checkbox.closest('.todo-item').dataset.id;
-                            this.toggleTodo(todoId);
-                        });
+                // Map todos to include completed class info
+                const todos = (result.data?.todos || []).map(todo => ({
+                    ...todo,
+                    completedClass: todo.completed ? 'completed' : ''
+                }));
+                
+                this.todosComponent.setItems(todos);
+                
+                // Update checkbox states and text styling after render
+                setTimeout(() => {
+                    this.getChildren('.todo-item').forEach(item => {
+                        const todoId = item.dataset.id;
+                        const todo = todos.find(t => String(t.id) === todoId);
+                        if (todo) {
+                            const checkbox = item.querySelector('.todo-checkbox');
+                            const textSpan = item.querySelector('.todo-text');
+                            if (checkbox) checkbox.checked = todo.completed;
+                            if (textSpan && todo.completed) textSpan.classList.add('completed');
+                        }
                     });
-                    
-                    // Delete buttons
-                    this.getChildren('.delete-todo-btn').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const todoId = btn.closest('.todo-item').dataset.id;
-                            this.deleteTodo(todoId);
-                        });
-                    });
-                } else {
-                    content.innerHTML = '<div class="empty-state">No todos yet. Add one above!</div>';
-                }
-            }
-            
-            async createTodo(e) {
-                e.preventDefault();
-                const form = e.target;
-                const input = form.querySelector('input');
-                const text = input.value.trim();
-                
-                if (!text) return;
-                
-                // Using Native.js data service
-                await this.data.post(`/api/lists/${this.listId}/todos`, { text });
-                
-                input.value = '';
-                this.loadTodos();
+                }, 0);
             }
             
             async toggleTodo(todoId) {
-                // Using Native.js data service
                 await this.data.put(`/api/todos/${todoId}`, { toggle: true });
                 this.loadTodos();
             }
             
             async deleteTodo(todoId) {
-                // Using Native.js data service
                 await this.data.delete(`/api/todos/${todoId}`);
                 this.loadTodos();
             }
@@ -738,26 +732,20 @@
             async updateListName() {
                 const name = this.getChild('.list-title-input').value.trim();
                 if (!name) return;
-                
-                // Using Native.js data service
                 await this.data.put(`/api/lists/${this.listId}`, { name });
             }
             
             async deleteList() {
-                // Using Native.js data service
                 await this.data.delete(`/api/lists/${this.listId}`);
                 window.location.href = '/lists';
-            }
-            
-            escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
             }
         }
         
         // ==================== REGISTER & RUN ====================
         const registry = createNativeJsComponentRegistry();
+        
+        // Register default Native.js components (n-submit-form, n-modal, n-list, etc.)
+        registerDefaultComponents(registry);
         
         const routes = [
             { pathname: '/', element: AuthPage },
@@ -772,4 +760,3 @@
     </script>
 </body>
 </html>
-

@@ -8,7 +8,9 @@ import { NativeJsDataService, createNativeJsDataService } from "./service";
 // Components library
 import { 
     NativeJsFetchForm, 
-    NativeJsSubmitForm, 
+    NativeJsSubmitForm,
+    NativeJsModal,
+    NativeJsList,
     NativeJsDefaultComponents,
     registerDefaultComponents 
 } from "./components";
@@ -30,6 +32,8 @@ export {
     // Components
     NativeJsFetchForm,
     NativeJsSubmitForm,
+    NativeJsModal,
+    NativeJsList,
     NativeJsDefaultComponents,
     registerDefaultComponents
 };

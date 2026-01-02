@@ -99,3 +99,23 @@ async onInit() {
 ## Shadow DOM
 
 Shadow DOM is disabled by default. Components render directly to the light DOM.
+
+## Built-in Components
+
+Native.js includes pre-built components for common UI patterns:
+
+| Component | Description |
+|-----------|-------------|
+| [`<n-fetch-form>`](./forms.md#fetch-form-n-fetch-form) | Form for fetching/filtering data |
+| [`<n-submit-form>`](./forms.md#submit-form-n-submit-form) | Form for submitting data |
+| [`<n-modal>`](./modal.md) | Modal/dialog component |
+| [`<n-list>`](./list.md) | Dynamic list rendering |
+
+Register all built-in components:
+
+```typescript
+import { registerDefaultComponents, createNativeJsComponentRegistry } from 'native.js';
+
+const registry = createNativeJsComponentRegistry();
+registerDefaultComponents(registry);
+```

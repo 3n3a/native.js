@@ -7,17 +7,23 @@
 import { NativeJsComponentRegistry } from "../n";
 import { NativeJsFetchForm } from "./fetch-form";
 import { NativeJsSubmitForm } from "./submit-form";
+import { NativeJsModal } from "./modal";
+import { NativeJsList } from "./list";
 
 // Export individual components
 export { NativeJsFetchForm } from "./fetch-form";
 export { NativeJsSubmitForm } from "./submit-form";
+export { NativeJsModal } from "./modal";
+export { NativeJsList } from "./list";
 
 /**
  * All default components
  */
 export const NativeJsDefaultComponents = [
     NativeJsFetchForm,
-    NativeJsSubmitForm
+    NativeJsSubmitForm,
+    NativeJsModal,
+    NativeJsList
 ];
 
 /**
@@ -28,4 +34,3 @@ export function registerDefaultComponents(registry: NativeJsComponentRegistry): 
         registry.registerComponentClass(component);
     }
 }
-
