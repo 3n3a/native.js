@@ -163,15 +163,16 @@
     <!-- Fetch Form: Filter Example -->
     <!-- ================================ -->
     <h2>Filter Form Example</h2>
+    <p><em>Note: Filtering is done client-side since we're using static JSON files.</em></p>
     
     <div class="example-section">
         <h3>Live Example</h3>
         
-        <n-fetch-form n-action="../api/users.json" n-state-key="filteredUsers" n-target="user-results">
+        <n-fetch-form id="user-filter-form" n-action="../api/users.json" n-state-key="filteredUsers" n-target="user-results">
             <select name="role">
                 <option value="">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
+                <option value="Admin">Admin</option>
+                <option value="User">User</option>
             </select>
             <input type="text" name="search" placeholder="Filter by name...">
             <button type="submit">Filter</button>
@@ -304,20 +305,40 @@ document.querySelector('n-submit-form').addEventListener('n-submit-error', (e) =
             }
         });
         
-        // Listen for user filter results
+        // Listen for user filter results - apply client-side filtering
         document.getElementById('user-results').addEventListener('n-data-received', (e) => {
             const container = e.target;
             const data = e.detail.data;
             
-            if (data?.users?.length > 0) {
-                container.innerHTML = data.users.map(user => `
+            // Get filter values from the form
+            const form = document.getElementById('user-filter-form');
+            const formData = new FormData(form.querySelector('form'));
+            const roleFilter = formData.get('role')?.toString().toLowerCase() || '';
+            const searchFilter = formData.get('search')?.toString().toLowerCase() || '';
+            
+            // Apply client-side filtering
+            let users = data?.users || [];
+            
+            if (roleFilter) {
+                users = users.filter(user => user.role.toLowerCase() === roleFilter);
+            }
+            
+            if (searchFilter) {
+                users = users.filter(user => 
+                    user.name.toLowerCase().includes(searchFilter) ||
+                    user.email.toLowerCase().includes(searchFilter)
+                );
+            }
+            
+            if (users.length > 0) {
+                container.innerHTML = users.map(user => `
                     <div class="result-item">
                         <strong>${user.name}</strong> - ${user.email}
                         <span class="result-type">${user.role}</span>
                     </div>
                 `).join('');
             } else {
-                container.innerHTML = '<em>No users found</em>';
+                container.innerHTML = '<em>No users found matching filters</em>';
             }
         });
         

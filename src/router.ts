@@ -2,20 +2,66 @@ import { NativeURLChangeEvent } from "./event";
 import type { NativeRoute, NativeRouteList } from "./interfaces";
 import type { NativeJsComponent, NativeJsComponentRegistry } from "./n";
 
-export function createRouter(registry: NativeJsComponentRegistry, routes: NativeRouteList, host?: HTMLElement) {
-    return new NativeRouter(registry, routes, host);
+export interface NativeRouterOptions {
+    host?: HTMLElement;
+    /** Base path for all routes (auto-detected from current directory if not set) */
+    basePath?: string;
+}
+
+export function createRouter(
+    registry: NativeJsComponentRegistry, 
+    routes: NativeRouteList, 
+    hostOrOptions?: HTMLElement | NativeRouterOptions
+) {
+    // Handle legacy signature (host as third param)
+    if (hostOrOptions instanceof HTMLElement) {
+        return new NativeRouter(registry, routes, { host: hostOrOptions });
+    }
+    return new NativeRouter(registry, routes, hostOrOptions);
 }
 
 export class NativeRouter {
     private registry: NativeJsComponentRegistry;
     private patternToRoute: Map<URLPattern, NativeRoute>;
     private host: HTMLElement;
+    private basePath: string;
 
-    constructor(registry: NativeJsComponentRegistry, routes: NativeRouteList, host?: HTMLElement) {
+    constructor(registry: NativeJsComponentRegistry, routes: NativeRouteList, options?: NativeRouterOptions) {
         this.registry = registry;
         this.patternToRoute = new Map();
-        this.host = host || document.body;
+        this.host = options?.host || document.body;
+        this.basePath = options?.basePath ?? this.detectBasePath();
         this.compileRoutes(routes);
+    }
+
+    /**
+     * Auto-detect base path from the current HTML file location
+     * e.g., /general/index.html -> /general
+     */
+    private detectBasePath(): string {
+        const pathname = window.location.pathname;
+        
+        // If we're at a file like /general/index.html or /general/
+        // Extract the directory part
+        if (pathname.endsWith('/') || pathname.endsWith('/index.html')) {
+            const path = pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
+            return path || '';
+        }
+        
+        // For paths like /general/something, get the directory
+        const lastSlash = pathname.lastIndexOf('/');
+        if (lastSlash > 0) {
+            return pathname.substring(0, lastSlash);
+        }
+        
+        return '';
+    }
+
+    /**
+     * Get the base path
+     */
+    getBasePath(): string {
+        return this.basePath;
     }
 
     /**
@@ -47,7 +93,9 @@ export class NativeRouter {
 
     private compileRoutes(routes: NativeRouteList) {
         for (const route of routes) {
-            const pattern = new URLPattern({ pathname: route.pathname });
+            // Prepend basePath to each route pattern
+            const fullPath = this.basePath + route.pathname;
+            const pattern = new URLPattern({ pathname: fullPath });
             this.patternToRoute.set(pattern, route);
         }
     }
@@ -82,7 +130,7 @@ export class NativeRouter {
             // Insert into host - this triggers connectedCallback which renders template and calls onInit
             this.host.replaceChildren(component);
         } else {
-            throw new Error('Failed to find matching route');
+            throw new Error(`Failed to find matching route for: ${currentURL.pathname}`);
         }
     }
 
@@ -108,8 +156,10 @@ export class NativeRouter {
     }
 
     private navigateToURL(url: string) {
+        // Prepend basePath if the URL is relative (starts with /)
+        const fullUrl = url.startsWith('/') ? this.basePath + url : url;
         const state = {};
-        window.history.pushState(state, '', url);
+        window.history.pushState(state, '', fullUrl);
         this.signalURLChange(state);
     }
 
