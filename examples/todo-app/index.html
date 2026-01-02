@@ -3,290 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App | Native.js</title>
+    <title>Todo App</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
             min-height: 100vh;
-            color: #333;
+            color: #222;
+            line-height: 1.5;
         }
         
         #app {
-            max-width: 600px;
+            max-width: 480px;
             margin: 0 auto;
-            padding: 2rem 1rem;
+            padding: 40px 20px;
         }
         
-        /* Auth Forms */
-        .auth-container {
+        /* Forms */
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 15px;
             background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
         
-        .auth-container h1 {
+        input:focus {
+            outline: none;
+            border-color: #333;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .btn {
+            background: #222;
+            color: white;
+        }
+        
+        .btn:hover { background: #444; }
+        .btn:disabled { background: #999; cursor: not-allowed; }
+        
+        .btn-ghost {
+            background: transparent;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-ghost:hover { background: #f0f0f0; }
+        
+        .btn-delete {
+            background: transparent;
+            color: #999;
+            padding: 8px;
+        }
+        
+        .btn-delete:hover { color: #c00; }
+        
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        /* Auth */
+        .auth-title {
+            font-size: 24px;
+            font-weight: 600;
             text-align: center;
-            margin-bottom: 1.5rem;
-            color: #667eea;
+            margin-bottom: 24px;
         }
         
         .auth-tabs {
             display: flex;
-            margin-bottom: 1.5rem;
-            border-bottom: 2px solid #eee;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 24px;
         }
         
         .auth-tab {
             flex: 1;
-            padding: 0.75rem;
+            padding: 12px;
             text-align: center;
-            cursor: pointer;
-            border: none;
             background: none;
-            font-size: 1rem;
+            border: none;
+            font-size: 14px;
             color: #666;
-            transition: all 0.2s;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
         }
         
         .auth-tab.active {
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
-            margin-bottom: -2px;
+            color: #222;
+            border-bottom-color: #222;
         }
         
         .auth-form {
             display: none;
             flex-direction: column;
-            gap: 1rem;
+            gap: 16px;
         }
         
         .auth-form.active { display: flex; }
         
-        input {
-            padding: 0.875rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s;
+        .error-msg {
+            background: #fee;
+            color: #c00;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
         }
         
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        button {
-            padding: 0.875rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-        }
-        
-        .btn-secondary:hover { background: #e0e0e0; }
-        
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .btn-danger:hover { background: #c82333; }
-        
-        .btn-small {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-        }
-        
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-size: 0.875rem;
-        }
-        
-        /* n-submit-form messages */
-        .n-form-message {
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
-        .n-form-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .n-form-success {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        /* App Layout */
-        .app-header {
+        /* Header */
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem;
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
-            margin-bottom: 1rem;
+            margin-bottom: 20px;
         }
         
-        .app-header h1 {
-            color: white;
-            font-size: 1.5rem;
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
         }
         
-        .user-info {
+        .header-right {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            color: white;
+            gap: 12px;
+            font-size: 14px;
+            color: #666;
         }
         
-        /* Lists */
-        .lists-container {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-        
-        .section-header {
+        /* Add form */
+        .add-form {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
+            gap: 8px;
+            margin-bottom: 20px;
         }
         
-        .section-header h2 {
-            color: #333;
-        }
+        .add-form input { flex: 1; }
         
-        .new-list-form,
-        n-submit-form[n-action="/api/lists"] form {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .new-list-form input,
-        n-submit-form[n-action="/api/lists"] input { flex: 1; }
-        
+        /* List items */
         .list-item {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 1rem;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
+            padding: 14px 16px;
+            border-bottom: 1px solid #eee;
             cursor: pointer;
-            transition: all 0.2s;
         }
         
-        .list-item:hover {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
+        .list-item:last-child { border-bottom: none; }
+        .list-item:hover { background: #fafafa; }
         
         .list-item-name {
-            font-weight: 500;
-        }
-        
-        .list-item-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        /* n-list empty state */
-        .n-list-empty {
-            text-align: center;
-            padding: 2rem;
-            color: #999;
-        }
-        
-        /* Todos */
-        .list-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .back-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.25rem;
-        }
-        
-        .list-title {
             flex: 1;
+            font-size: 15px;
         }
         
-        .list-title-input {
-            font-size: 1.25rem;
-            font-weight: 600;
-            border: none;
-            border-bottom: 2px solid transparent;
-            padding: 0.25rem 0;
-            width: 100%;
-        }
-        
-        .list-title-input:focus {
-            outline: none;
-            border-bottom-color: #667eea;
-        }
-        
-        .new-todo-form,
-        n-submit-form.new-todo-form form {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .new-todo-form input,
-        n-submit-form.new-todo-form input { flex: 1; }
-        
+        /* Todo items */
         .todo-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.875rem;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            gap: 12px;
         }
         
+        .todo-item:last-child { border-bottom: none; }
+        
         .todo-checkbox {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
-            accent-color: #667eea;
         }
         
         .todo-text {
             flex: 1;
+            font-size: 15px;
         }
         
         .todo-text.completed {
@@ -294,152 +203,190 @@
             color: #999;
         }
         
-        .loading {
-            text-align: center;
-            padding: 2rem;
+        /* List header */
+        .list-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
             color: #666;
         }
         
-        /* Native.js Modal customization */
-        n-modal {
-            --n-modal-bg: white;
-            --n-modal-radius: 12px;
-            --n-modal-max-width: 400px;
-            --n-modal-padding: 1.5rem;
-            --n-modal-border: #eee;
+        .back-btn:hover { color: #222; }
+        
+        .list-title-input {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            padding: 4px 0;
+            background: transparent;
         }
         
-        n-modal .n-modal-title {
-            color: #333;
+        .list-title-input:focus {
+            outline: none;
+            border-bottom: 1px solid #ddd;
         }
         
-        n-modal .n-modal-footer button {
-            margin-left: 0.5rem;
+        /* Empty state */
+        .empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 14px;
         }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 360px;
+            width: 90%;
+        }
+        
+        .modal h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .modal p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .modal-actions .btn-danger {
+            background: #c00;
+            color: white;
+        }
+        
+        .modal-actions .btn-danger:hover { background: #a00; }
     </style>
 </head>
 <body>
     <main id="app"></main>
 
-    <!-- Auth Page Template -->
+    <!-- Auth Page -->
     <template id="tpl-auth">
-        <div class="auth-container">
-            <h1>📝 Todo App</h1>
-            
-            <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="login">Login</button>
-                <button class="auth-tab" data-tab="register">Register</button>
-            </div>
-            
-            <div class="error-message" style="display: none;"></div>
-            
-            <!-- Login Form using n-submit-form -->
-            <n-submit-form 
-                class="auth-form active" 
-                id="login-form"
-                n-action="/api/login"
-                n-reset="false">
-                <input type="text" name="username" placeholder="Username" required>
-                <input type="password" name="password" placeholder="Password" required>
-                <button type="submit" class="btn-primary">Login</button>
-            </n-submit-form>
-            
-            <!-- Register Form using n-submit-form -->
-            <n-submit-form 
-                class="auth-form" 
-                id="register-form"
-                n-action="/api/register"
-                n-reset="false">
-                <input type="text" name="username" placeholder="Username" required minlength="3">
-                <input type="password" name="password" placeholder="Password (min 4 chars)" required minlength="4">
-                <input type="password" name="password_confirm" placeholder="Confirm Password" required>
-                <button type="submit" class="btn-primary">Create Account</button>
-            </n-submit-form>
-        </div>
-    </template>
-
-    <!-- Lists Page Template -->
-    <template id="tpl-lists">
-        <div class="app-header">
-            <h1>📝 My Lists</h1>
-            <div class="user-info">
-                <span class="username"></span>
-                <button class="btn-secondary btn-small logout-btn">Logout</button>
-            </div>
-        </div>
-        
-        <div class="lists-container">
-            <!-- Create List Form using n-submit-form -->
-            <n-submit-form 
-                n-action="/api/lists" 
-                class="new-list-form"
-                n-success-message="">
-                <input type="text" name="name" placeholder="New list name..." required>
-                <button type="submit" class="btn-primary">Add List</button>
-            </n-submit-form>
-            
-            <!-- Lists using n-list component -->
-            <n-list id="lists-list" n-empty-text="No lists yet. Create one above!">
-                <template n-item>
-                    <div class="list-item" data-id="{{id}}">
-                        <span class="list-item-name">{{name}}</span>
-                        <div class="list-item-actions">
-                            <button class="btn-danger btn-small delete-btn" data-id="{{id}}">🗑️</button>
-                        </div>
-                    </div>
-                </template>
-            </n-list>
-        </div>
-    </template>
-
-    <!-- Todos Page Template -->
-    <template id="tpl-todos">
-        <div class="app-header">
-            <h1>📝 Todo App</h1>
-            <div class="user-info">
-                <span class="username"></span>
-                <button class="btn-secondary btn-small logout-btn">Logout</button>
-            </div>
-        </div>
-        
-        <div class="lists-container">
-            <div class="list-header">
-                <button class="back-btn">←</button>
-                <div class="list-title">
-                    <input type="text" class="list-title-input" placeholder="List name">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="auth-title">Todo</h1>
+                
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Sign in</button>
+                    <button class="auth-tab" data-tab="register">Create account</button>
                 </div>
-                <button class="btn-danger btn-small delete-list-btn">Delete List</button>
+                
+                <div class="error-msg" style="display: none;"></div>
+                
+                <form class="auth-form active" id="login-form">
+                    <input type="text" name="username" placeholder="Username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit" class="btn">Sign in</button>
+                </form>
+                
+                <form class="auth-form" id="register-form">
+                    <input type="text" name="username" placeholder="Username" required minlength="3">
+                    <input type="password" name="password" placeholder="Password" required minlength="4">
+                    <input type="password" name="password_confirm" placeholder="Confirm password" required>
+                    <button type="submit" class="btn">Create account</button>
+                </form>
             </div>
-            
-            <!-- Create Todo Form using n-submit-form -->
-            <n-submit-form 
-                class="new-todo-form"
-                n-action=""
-                n-success-message="">
-                <input type="text" name="text" placeholder="Add a new todo..." required>
-                <button type="submit" class="btn-primary">Add</button>
-            </n-submit-form>
-            
-            <!-- Todos using n-list component -->
-            <n-list id="todos-list" n-empty-text="No todos yet. Add one above!">
-                <template n-item>
-                    <div class="todo-item" data-id="{{id}}">
-                        <input type="checkbox" class="todo-checkbox" data-id="{{id}}">
-                        <span class="todo-text">{{text}}</span>
-                        <button class="btn-secondary btn-small delete-todo-btn" data-id="{{id}}">🗑️</button>
-                    </div>
-                </template>
-            </n-list>
+        </div>
+    </template>
+
+    <!-- Lists Page -->
+    <template id="tpl-lists">
+        <div class="header">
+            <h1>My Lists</h1>
+            <div class="header-right">
+                <span class="username"></span>
+                <button class="btn-ghost logout-btn">Sign out</button>
+            </div>
         </div>
         
-        <!-- Delete Confirmation Modal using n-modal -->
-        <n-modal id="delete-modal" n-title="Delete List?" n-closable="true">
-            <p>This will permanently delete the list and all its todos.</p>
-            <div n-slot="footer">
-                <button class="btn-secondary" n-modal-cancel>Cancel</button>
-                <button class="btn-danger" n-modal-confirm>Delete</button>
+        <form class="add-form" id="add-list-form">
+            <input type="text" name="name" placeholder="New list..." required>
+            <button type="submit" class="btn">Add</button>
+        </form>
+        
+        <div class="card">
+            <div class="lists-content"></div>
+        </div>
+        
+        <div class="modal-overlay" style="display: none;">
+            <div class="modal">
+                <h3>Delete this list?</h3>
+                <p>All todos in this list will be deleted.</p>
+                <div class="modal-actions">
+                    <button class="btn-ghost cancel-btn">Cancel</button>
+                    <button class="btn-danger confirm-btn">Delete</button>
+                </div>
             </div>
-        </n-modal>
+        </div>
+    </template>
+
+    <!-- Todos Page -->
+    <template id="tpl-todos">
+        <div class="header">
+            <h1>Todo</h1>
+            <div class="header-right">
+                <span class="username"></span>
+                <button class="btn-ghost logout-btn">Sign out</button>
+            </div>
+        </div>
+        
+        <div class="list-header">
+            <button class="back-btn">←</button>
+            <input type="text" class="list-title-input" placeholder="List name">
+            <button class="btn-delete delete-list-btn">Delete</button>
+        </div>
+        
+        <form class="add-form" id="add-todo-form">
+            <input type="text" name="text" placeholder="Add todo..." required>
+            <button type="submit" class="btn">Add</button>
+        </form>
+        
+        <div class="card">
+            <div class="todos-content"></div>
+        </div>
+        
+        <div class="modal-overlay" style="display: none;">
+            <div class="modal">
+                <h3>Delete this list?</h3>
+                <p>All todos in this list will be deleted.</p>
+                <div class="modal-actions">
+                    <button class="btn-ghost cancel-btn">Cancel</button>
+                    <button class="btn-danger confirm-btn">Delete</button>
+                </div>
+            </div>
+        </div>
     </template>
 
     <script type="module">
@@ -447,34 +394,29 @@
             createNativeJs, 
             NativeJsComponent, 
             createNativeJsComponentRegistry,
-            createNativeJsDataService,
-            registerDefaultComponents,
-            NativeJsModal,
-            NativeJsList
+            createNativeJsDataService
         } from "../lib/index.js";
         
         const container = document.querySelector('#app');
-        
-        // Standalone data service for auth check (before component is mounted)
         const authService = createNativeJsDataService();
         
-        // Check if user is logged in
         async function checkAuth() {
             const result = await authService.fetch('/api/me');
             return result.ok ? result.data?.user : null;
         }
         
-        // ==================== AUTH COMPONENT ====================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // ==================== AUTH ====================
         class AuthPage extends NativeJsComponent {
             static tagName = 'n-auth-page';
             static templateId = 'tpl-auth';
             
             onInit() {
-                this.setupTabs();
-                this.setupForms();
-            }
-            
-            setupTabs() {
                 const tabs = this.getChildren('.auth-tab');
                 const loginForm = this.getChild('#login-form');
                 const registerForm = this.getChild('#register-form');
@@ -483,70 +425,69 @@
                     tab.addEventListener('click', () => {
                         tabs.forEach(t => t.classList.remove('active'));
                         tab.classList.add('active');
-                        
-                        if (tab.dataset.tab === 'login') {
-                            loginForm.classList.add('active');
-                            registerForm.classList.remove('active');
-                        } else {
-                            loginForm.classList.remove('active');
-                            registerForm.classList.add('active');
-                        }
-                        
+                        loginForm.classList.toggle('active', tab.dataset.tab === 'login');
+                        registerForm.classList.toggle('active', tab.dataset.tab === 'register');
                         this.hideError();
                     });
                 });
+                
+                loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+                registerForm.addEventListener('submit', (e) => this.handleRegister(e));
             }
             
-            setupForms() {
-                const loginForm = this.getChild('#login-form');
-                const registerForm = this.getChild('#register-form');
-                
-                // Handle login form success/error via n-submit-form events
-                loginForm.addEventListener('n-submit-success', () => {
-                    window.location.href = '/lists';
-                });
-                
-                loginForm.addEventListener('n-submit-error', (e) => {
-                    this.showError(e.detail.error || 'Login failed');
-                });
-                
-                // Handle register form - need to validate password match first
-                registerForm.addEventListener('n-submit-start', (e) => {
-                    const data = e.detail.data;
-                    if (data.password !== data.password_confirm) {
-                        e.preventDefault();
-                        this.showError('Passwords do not match');
-                    }
-                });
-                
-                registerForm.addEventListener('n-submit-success', () => {
-                    window.location.href = '/lists';
-                });
-                
-                registerForm.addEventListener('n-submit-error', (e) => {
-                    this.showError(e.detail.error || 'Registration failed');
-                });
-            }
-            
-            showError(message) {
-                const errorEl = this.getChild('.error-message');
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
+            showError(msg) {
+                const el = this.getChild('.error-msg');
+                el.textContent = msg;
+                el.style.display = 'block';
             }
             
             hideError() {
-                const errorEl = this.getChild('.error-message');
-                errorEl.style.display = 'none';
+                this.getChild('.error-msg').style.display = 'none';
+            }
+            
+            async handleLogin(e) {
+                e.preventDefault();
+                const form = e.target;
+                const result = await this.data.post('/api/login', {
+                    username: form.username.value,
+                    password: form.password.value
+                });
+                
+                if (result.ok) {
+                    window.location.href = '/lists';
+                } else {
+                    this.showError(result.error || 'Login failed');
+                }
+            }
+            
+            async handleRegister(e) {
+                e.preventDefault();
+                const form = e.target;
+                
+                if (form.password.value !== form.password_confirm.value) {
+                    this.showError('Passwords do not match');
+                    return;
+                }
+                
+                const result = await this.data.post('/api/register', {
+                    username: form.username.value,
+                    password: form.password.value
+                });
+                
+                if (result.ok) {
+                    window.location.href = '/lists';
+                } else {
+                    this.showError(result.error || 'Registration failed');
+                }
             }
         }
         
-        // ==================== LISTS COMPONENT ====================
+        // ==================== LISTS ====================
         class ListsPage extends NativeJsComponent {
             static tagName = 'n-lists-page';
             static templateId = 'tpl-lists';
             
-            /** @type {NativeJsList} */
-            listComponent = null;
+            deleteListId = null;
             
             async onInit() {
                 const user = await checkAuth();
@@ -557,32 +498,9 @@
                 
                 this.getChild('.username').textContent = user.username;
                 this.getChild('.logout-btn').addEventListener('click', () => this.logout());
-                
-                // Get the n-list component
-                this.listComponent = this.getChild('#lists-list');
-                
-                // Setup form submission handler
-                const createForm = this.getChild('n-submit-form');
-                createForm.addEventListener('n-submit-success', () => {
-                    this.loadLists();
-                });
-                
-                // Setup list click handlers
-                this.listComponent.addEventListener('n-item-click', (e) => {
-                    const { item, originalEvent } = e.detail;
-                    // Don't navigate if clicking delete button
-                    if (!originalEvent.target.classList.contains('delete-btn')) {
-                        window.location.href = `/list/${item.id}`;
-                    }
-                });
-                
-                // Setup delete buttons via event delegation
-                this.listComponent.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('delete-btn')) {
-                        e.stopPropagation();
-                        this.deleteList(e.target.dataset.id);
-                    }
-                });
+                this.getChild('#add-list-form').addEventListener('submit', (e) => this.addList(e));
+                this.getChild('.cancel-btn').addEventListener('click', () => this.hideModal());
+                this.getChild('.confirm-btn').addEventListener('click', () => this.confirmDelete());
                 
                 this.loadLists();
             }
@@ -592,34 +510,73 @@
                 window.location.href = '/';
             }
             
-            async loadLists() {
-                const result = await this.data.fetch('/api/lists', { stateKey: 'lists' });
-                
-                if (result.ok && result.data?.lists) {
-                    this.listComponent.setItems(result.data.lists);
-                } else {
-                    this.listComponent.setItems([]);
-                }
+            showModal(listId) {
+                this.deleteListId = listId;
+                this.getChild('.modal-overlay').style.display = 'flex';
             }
             
-            async deleteList(id) {
-                if (confirm('Delete this list and all its todos?')) {
-                    await this.data.delete(`/api/lists/${id}`);
+            hideModal() {
+                this.deleteListId = null;
+                this.getChild('.modal-overlay').style.display = 'none';
+            }
+            
+            async confirmDelete() {
+                if (this.deleteListId) {
+                    await this.data.delete(`/api/lists/${this.deleteListId}`);
+                    this.hideModal();
                     this.loadLists();
                 }
             }
+            
+            async loadLists() {
+                const content = this.getChild('.lists-content');
+                const result = await this.data.fetch('/api/lists');
+                
+                if (!result.ok || !result.data?.lists?.length) {
+                    content.innerHTML = '<div class="empty">No lists yet</div>';
+                    return;
+                }
+                
+                content.innerHTML = result.data.lists.map(list => `
+                    <div class="list-item" data-id="${list.id}">
+                        <span class="list-item-name">${escapeHtml(list.name)}</span>
+                        <button class="btn-delete delete-btn" data-id="${list.id}">×</button>
+                    </div>
+                `).join('');
+                
+                this.getChildren('.list-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('delete-btn')) {
+                            window.location.href = `/list/${item.dataset.id}`;
+                        }
+                    });
+                });
+                
+                this.getChildren('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.showModal(btn.dataset.id);
+                    });
+                });
+            }
+            
+            async addList(e) {
+                e.preventDefault();
+                const input = e.target.name;
+                if (!input.value.trim()) return;
+                
+                await this.data.post('/api/lists', { name: input.value.trim() });
+                input.value = '';
+                this.loadLists();
+            }
         }
         
-        // ==================== TODOS COMPONENT ====================
+        // ==================== TODOS ====================
         class TodosPage extends NativeJsComponent {
             static tagName = 'n-todos-page';
             static templateId = 'tpl-todos';
             
             listId = null;
-            /** @type {NativeJsList} */
-            todosComponent = null;
-            /** @type {NativeJsModal} */
-            deleteModal = null;
             
             async onInit(urlPatternResult) {
                 const user = await checkAuth();
@@ -637,9 +594,9 @@
                 this.getChild('.username').textContent = user.username;
                 this.getChild('.logout-btn').addEventListener('click', () => this.logout());
                 this.getChild('.back-btn').addEventListener('click', () => window.location.href = '/lists');
-                this.getChild('.delete-list-btn').addEventListener('click', () => this.deleteModal.open());
+                this.getChild('.delete-list-btn').addEventListener('click', () => this.showModal());
+                this.getChild('#add-todo-form').addEventListener('submit', (e) => this.addTodo(e));
                 
-                // List name editing
                 const titleInput = this.getChild('.list-title-input');
                 titleInput.addEventListener('blur', () => this.updateListName());
                 titleInput.addEventListener('keydown', (e) => {
@@ -649,33 +606,8 @@
                     }
                 });
                 
-                // Get the n-list component for todos
-                this.todosComponent = this.getChild('#todos-list');
-                
-                // Get and setup the modal
-                this.deleteModal = this.getChild('#delete-modal');
-                this.deleteModal.addEventListener('n-modal-confirm', () => this.deleteList());
-                
-                // Setup the create todo form - set dynamic action URL
-                const createForm = this.getChild('n-submit-form');
-                createForm.setAttribute('n-action', `/api/lists/${this.listId}/todos`);
-                createForm.addEventListener('n-submit-success', () => {
-                    this.loadTodos();
-                });
-                
-                // Setup todo item interactions via event delegation
-                this.todosComponent.addEventListener('click', (e) => {
-                    const todoItem = e.target.closest('.todo-item');
-                    if (!todoItem) return;
-                    
-                    const todoId = todoItem.dataset.id;
-                    
-                    if (e.target.classList.contains('todo-checkbox')) {
-                        this.toggleTodo(todoId);
-                    } else if (e.target.classList.contains('delete-todo-btn')) {
-                        this.deleteTodo(todoId);
-                    }
-                });
+                this.getChild('.cancel-btn').addEventListener('click', () => this.hideModal());
+                this.getChild('.confirm-btn').addEventListener('click', () => this.deleteList());
                 
                 this.loadTodos();
             }
@@ -685,54 +617,78 @@
                 window.location.href = '/';
             }
             
+            showModal() {
+                this.getChild('.modal-overlay').style.display = 'flex';
+            }
+            
+            hideModal() {
+                this.getChild('.modal-overlay').style.display = 'none';
+            }
+            
             async loadTodos() {
-                const result = await this.data.fetch(`/api/lists/${this.listId}/todos`, { stateKey: 'todos' });
+                const content = this.getChild('.todos-content');
+                const result = await this.data.fetch(`/api/lists/${this.listId}/todos`);
                 
                 if (!result.ok) {
                     window.location.href = '/lists';
                     return;
                 }
                 
-                // Set list name
                 this.getChild('.list-title-input').value = result.data.list.name;
                 
-                // Map todos to include completed class info
-                const todos = (result.data?.todos || []).map(todo => ({
-                    ...todo,
-                    completedClass: todo.completed ? 'completed' : ''
-                }));
+                if (!result.data.todos?.length) {
+                    content.innerHTML = '<div class="empty">No todos yet</div>';
+                    return;
+                }
                 
-                this.todosComponent.setItems(todos);
+                content.innerHTML = result.data.todos.map(todo => `
+                    <div class="todo-item" data-id="${todo.id}">
+                        <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
+                        <span class="todo-text ${todo.completed ? 'completed' : ''}">${escapeHtml(todo.text)}</span>
+                        <button class="btn-delete delete-todo-btn">×</button>
+                    </div>
+                `).join('');
                 
-                // Update checkbox states and text styling after render
-                setTimeout(() => {
-                    this.getChildren('.todo-item').forEach(item => {
-                        const todoId = item.dataset.id;
-                        const todo = todos.find(t => String(t.id) === todoId);
-                        if (todo) {
-                            const checkbox = item.querySelector('.todo-checkbox');
-                            const textSpan = item.querySelector('.todo-text');
-                            if (checkbox) checkbox.checked = todo.completed;
-                            if (textSpan && todo.completed) textSpan.classList.add('completed');
-                        }
+                this.getChildren('.todo-checkbox').forEach(cb => {
+                    cb.addEventListener('change', () => {
+                        const id = cb.closest('.todo-item').dataset.id;
+                        this.toggleTodo(id);
                     });
-                }, 0);
+                });
+                
+                this.getChildren('.delete-todo-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.closest('.todo-item').dataset.id;
+                        this.deleteTodo(id);
+                    });
+                });
             }
             
-            async toggleTodo(todoId) {
-                await this.data.put(`/api/todos/${todoId}`, { toggle: true });
+            async addTodo(e) {
+                e.preventDefault();
+                const input = e.target.text;
+                if (!input.value.trim()) return;
+                
+                await this.data.post(`/api/lists/${this.listId}/todos`, { text: input.value.trim() });
+                input.value = '';
                 this.loadTodos();
             }
             
-            async deleteTodo(todoId) {
-                await this.data.delete(`/api/todos/${todoId}`);
+            async toggleTodo(id) {
+                await this.data.put(`/api/todos/${id}`, { toggle: true });
+                this.loadTodos();
+            }
+            
+            async deleteTodo(id) {
+                await this.data.delete(`/api/todos/${id}`);
                 this.loadTodos();
             }
             
             async updateListName() {
                 const name = this.getChild('.list-title-input').value.trim();
-                if (!name) return;
-                await this.data.put(`/api/lists/${this.listId}`, { name });
+                if (name) {
+                    await this.data.put(`/api/lists/${this.listId}`, { name });
+                }
             }
             
             async deleteList() {
@@ -741,11 +697,8 @@
             }
         }
         
-        // ==================== REGISTER & RUN ====================
+        // ==================== INIT ====================
         const registry = createNativeJsComponentRegistry();
-        
-        // Register default Native.js components (n-submit-form, n-modal, n-list, etc.)
-        registerDefaultComponents(registry);
         
         const routes = [
             { pathname: '/', element: AuthPage },
@@ -753,10 +706,9 @@
             { pathname: '/list/:id', element: TodosPage }
         ];
         
-        const nativeJs = createNativeJs(container, routes);
+        // basePath: '' because this app runs at the root of its own server
+        const nativeJs = createNativeJs(container, routes, { basePath: '' });
         nativeJs.run();
-        
-        window.nativeJs = nativeJs;
     </script>
 </body>
 </html>

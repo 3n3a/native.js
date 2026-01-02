@@ -300,13 +300,22 @@ function createRouteFromInput<T extends NativeJsComponent>(
 /**
  * Create and initialize a Native.js application
  */
+export interface NativeJsOptions {
+    /** Base path for all routes (empty string for root, auto-detected if not set) */
+    basePath?: string;
+}
+
 export function createNativeJs<T extends NativeJsComponent>(
     host: HTMLElement, 
-    routes: NativeRouteListInput<T>
+    routes: NativeRouteListInput<T>,
+    options?: NativeJsOptions
 ) {
     const registry = createNativeJsComponentRegistry();
     const nativeRoutes = getNativeRoutesFromInput(registry, routes);
-    const router = createRouter(registry, nativeRoutes, host);
+    const router = createRouter(registry, nativeRoutes, { 
+        host, 
+        basePath: options?.basePath 
+    });
     return new NativeJs(host, router, registry);
 }
 
