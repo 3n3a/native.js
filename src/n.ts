@@ -1,5 +1,5 @@
 import { NativeJsComponentAlreadyExistsError, NativeJsComponentNotExistsError } from "./error";
-import type { NativeRoute, NativeRouteInput, NativeRouteList, NativeRouteListInput } from "./interfaces";
+import type { NativeJsComponentClass, NativeRoute, NativeRouteInput, NativeRouteList, NativeRouteListInput } from "./interfaces";
 import { createRouter, type NativeRouter } from "./router";
 
 /**
@@ -124,7 +124,7 @@ export class NativeJsComponentRegistry {
     /**
      * Register a component class as a custom element if not already registered
      */
-    public registerComponentClass(componentClass: typeof NativeJsComponent) {
+    public registerComponentClass(componentClass: NativeJsComponentClass) {
         const tagName = componentClass.tagName;
         
         if (!tagName) {
