@@ -242,6 +242,21 @@ export function createNativeJsComponentRegistry() {
     return new NativeJsComponentRegistry();
 }
 
+// Global reference to the active NativeJs instance for navigation
+let activeNativeJsInstance: NativeJs | null = null;
+
+/**
+ * Navigate to a URL programmatically (global function)
+ * @param url - The URL to navigate to
+ * @param state - Optional state object to pass to the route
+ */
+export function navigateTo(url: string, state: object = {}): void {
+    if (!activeNativeJsInstance) {
+        throw new Error('No active NativeJs instance. Call nativeJs.run() first.');
+    }
+    activeNativeJsInstance.navigateTo(url, state);
+}
+
 /**
  * Main Native.js application class
  */
@@ -260,7 +275,17 @@ export class NativeJs {
      * Start the framework
      */
     public run() {
+        activeNativeJsInstance = this;
         this.router.start();
+    }
+
+    /**
+     * Navigate to a URL programmatically
+     * @param url - The URL to navigate to (relative paths will have basePath prepended)
+     * @param state - Optional state object to pass to the route
+     */
+    public navigateTo(url: string, state: object = {}): void {
+        this.router.navigateTo(url, state);
     }
 }
 

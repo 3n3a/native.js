@@ -155,12 +155,20 @@ export class NativeRouter {
         }
     }
 
-    private navigateToURL(url: string) {
+    /**
+     * Navigate to a URL programmatically
+     * @param url - The URL to navigate to (relative paths will have basePath prepended)
+     * @param state - Optional state object to pass to the route
+     */
+    navigateTo(url: string, state: object = {}): void {
         // Prepend basePath if the URL is relative (starts with /)
         const fullUrl = url.startsWith('/') ? this.basePath + url : url;
-        const state = {};
         window.history.pushState(state, '', fullUrl);
         this.signalURLChange(state);
+    }
+
+    private navigateToURL(url: string) {
+        this.navigateTo(url);
     }
 
     private signalURLChange(state: object) {

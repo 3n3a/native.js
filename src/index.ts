@@ -1,6 +1,6 @@
 import { createRouter } from "./router";
 import { renderTemplate, renderFragment } from "./render";
-import { createNativeJs, NativeJsComponent, NativeJsComponentRegistry, createNativeJsComponentRegistry } from "./n";
+import { createNativeJs, NativeJsComponent, NativeJsComponentRegistry, createNativeJsComponentRegistry, navigateTo } from "./n";
 import { NativeJsState } from "./state";
 import { NativeJsStorage, createNativeJsStorage } from "./storage";
 import { NativeJsDataService, createNativeJsDataService } from "./service";
@@ -23,7 +23,8 @@ export {
     createRouter, 
     renderTemplate, 
     renderFragment,
-    createNativeJs, 
+    createNativeJs,
+    navigateTo,
     NativeJsComponent,
     NativeJsComponentRegistry,
     createNativeJsComponentRegistry,

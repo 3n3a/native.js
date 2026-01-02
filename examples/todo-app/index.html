@@ -413,6 +413,7 @@
             createNativeJsComponentRegistry,
             createNativeJsDataService,
             registerDefaultComponents,
+            navigateTo,
             escapeHtml
         } from "../lib/index.js";
         
@@ -449,7 +450,7 @@
                 
                 // Handle login form
                 loginForm.addEventListener('n-submit-success', () => {
-                    window.location.href = '/lists';
+                    navigateTo('/lists');
                 });
                 
                 loginForm.addEventListener('n-submit-error', (e) => {
@@ -466,7 +467,7 @@
                 });
                 
                 registerForm.addEventListener('n-submit-success', () => {
-                    window.location.href = '/lists';
+                    navigateTo('/lists');
                 });
                 
                 registerForm.addEventListener('n-submit-error', (e) => {
@@ -497,7 +498,7 @@
             async onInit() {
                 const user = await checkAuth();
                 if (!user) {
-                    window.location.href = '/';
+                    navigateTo('/');
                     return;
                 }
                 
@@ -516,7 +517,7 @@
                 this.listEl.addEventListener('n-item-click', (e) => {
                     const target = e.detail.originalEvent.target;
                     if (!target.classList.contains('delete-btn')) {
-                        window.location.href = `/list/${e.detail.item.id}`;
+                        navigateTo(`/list/${e.detail.item.id}`);
                     }
                 });
                 
@@ -544,7 +545,7 @@
             
             async logout() {
                 await this.data.post('/api/logout', {});
-                window.location.href = '/';
+                navigateTo('/');
             }
             
             async loadLists() {
@@ -572,13 +573,13 @@
             async onInit(urlPatternResult) {
                 const user = await checkAuth();
                 if (!user) {
-                    window.location.href = '/';
+                    navigateTo('/');
                     return;
                 }
                 
                 this.listId = urlPatternResult?.pathname?.groups?.id;
                 if (!this.listId) {
-                    window.location.href = '/lists';
+                    navigateTo('/lists');
                     return;
                 }
                 
@@ -592,7 +593,7 @@
                 
                 this.getChild('.username').textContent = user.username;
                 this.getChild('.logout-btn').addEventListener('click', () => this.logout());
-                this.getChild('.back-btn').addEventListener('click', () => window.location.href = '/lists');
+                this.getChild('.back-btn').addEventListener('click', () => navigateTo('/lists'));
                 this.getChild('.delete-list-btn').addEventListener('click', () => this.deleteListModal.open());
                 
                 const titleInput = this.getChild('.list-title-input');
@@ -629,7 +630,7 @@
                 this.deleteListModal.addEventListener('n-modal-confirm', async () => {
                     await this.data.delete(`/api/lists/${this.listId}`);
                     this.deleteListModal.close();
-                    window.location.href = '/lists';
+                    navigateTo('/lists');
                 });
                 
                 // Handle delete todo modal confirm
@@ -647,14 +648,14 @@
             
             async logout() {
                 await this.data.post('/api/logout', {});
-                window.location.href = '/';
+                navigateTo('/');
             }
             
             async loadTodos() {
                 const result = await this.data.fetch(`/api/lists/${this.listId}/todos`);
                 
                 if (!result.ok) {
-                    window.location.href = '/lists';
+                    navigateTo('/lists');
                     return;
                 }
                 
