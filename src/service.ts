@@ -6,6 +6,11 @@ import type { NativeJsState } from "./state";
 export type NativeJsHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /**
+ * Credentials mode for requests
+ */
+export type NativeJsCredentials = 'omit' | 'same-origin' | 'include';
+
+/**
  * Options for fetch operations
  */
 export interface NativeJsFetchOptions {
@@ -15,6 +20,8 @@ export interface NativeJsFetchOptions {
     headers?: Record<string, string>;
     /** Request timeout in milliseconds */
     timeout?: number;
+    /** Credentials mode (default: 'same-origin') */
+    credentials?: NativeJsCredentials;
 }
 
 /**
@@ -27,6 +34,20 @@ export interface NativeJsSubmitOptions {
     headers?: Record<string, string>;
     /** Request timeout in milliseconds */
     timeout?: number;
+    /** Credentials mode (default: 'same-origin') */
+    credentials?: NativeJsCredentials;
+}
+
+/**
+ * Options for delete operations
+ */
+export interface NativeJsDeleteOptions {
+    /** HTTP headers */
+    headers?: Record<string, string>;
+    /** Request timeout in milliseconds */
+    timeout?: number;
+    /** Credentials mode (default: 'same-origin') */
+    credentials?: NativeJsCredentials;
 }
 
 /**
@@ -47,11 +68,13 @@ export class NativeJsDataService {
     private state: NativeJsState | null;
     private baseUrl: string;
     private defaultHeaders: Record<string, string>;
+    private defaultCredentials: NativeJsCredentials;
 
     constructor(options?: {
         state?: NativeJsState;
         baseUrl?: string;
         headers?: Record<string, string>;
+        credentials?: NativeJsCredentials;
     }) {
         this.state = options?.state || null;
         this.baseUrl = options?.baseUrl || '';
@@ -59,6 +82,7 @@ export class NativeJsDataService {
             'Content-Type': 'application/json',
             ...options?.headers
         };
+        this.defaultCredentials = options?.credentials || 'same-origin';
     }
 
     /**
@@ -107,7 +131,38 @@ export class NativeJsDataService {
     }
 
     /**
-     * Fetch data from a URL
+     * Parse response data and error message
+     */
+    private async parseResponse<T>(response: Response): Promise<{ data: T | null; error: string | null }> {
+        const contentType = response.headers.get('content-type');
+        
+        if (!contentType?.includes('application/json')) {
+            return {
+                data: null,
+                error: response.ok ? null : `HTTP ${response.status}`
+            };
+        }
+
+        try {
+            const json = await response.json();
+            
+            if (response.ok) {
+                return { data: json as T, error: null };
+            }
+            
+            // Try to extract error message from response
+            const errorMessage = json.error || json.message || `HTTP ${response.status}`;
+            return { data: json as T, error: errorMessage };
+        } catch {
+            return {
+                data: null,
+                error: response.ok ? null : `HTTP ${response.status}`
+            };
+        }
+    }
+
+    /**
+     * Fetch data from a URL (GET request)
      * If stateKey is provided and state is available, result is stored in state
      */
     async fetch<T = unknown>(
@@ -116,18 +171,19 @@ export class NativeJsDataService {
     ): Promise<NativeJsDataResponse<T>> {
         const fullUrl = this.buildUrl(url);
         const headers = { ...this.defaultHeaders, ...options?.headers };
+        const credentials = options?.credentials || this.defaultCredentials;
 
         try {
             const response = await this.fetchWithTimeout(
                 fullUrl,
-                { method: 'GET', headers },
+                { method: 'GET', headers, credentials },
                 options?.timeout
             );
 
-            const data = await response.json() as T;
+            const { data, error } = await this.parseResponse<T>(response);
 
             // Store in state if stateKey provided and state available
-            if (options?.stateKey && this.state) {
+            if (options?.stateKey && this.state && response.ok) {
                 this.state.set(options.stateKey, data);
             }
 
@@ -135,7 +191,7 @@ export class NativeJsDataService {
                 ok: response.ok,
                 status: response.status,
                 data: response.ok ? data : null,
-                error: response.ok ? null : `HTTP ${response.status}`
+                error
             };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -149,7 +205,7 @@ export class NativeJsDataService {
     }
 
     /**
-     * Submit data to a URL
+     * Submit data to a URL (POST/PUT/PATCH)
      * Result is returned but NOT stored in state
      */
     async submit<TResponse = unknown, TData = unknown>(
@@ -160,6 +216,7 @@ export class NativeJsDataService {
         const fullUrl = this.buildUrl(url);
         const method = options?.method || 'POST';
         const headers = { ...this.defaultHeaders, ...options?.headers };
+        const credentials = options?.credentials || this.defaultCredentials;
 
         try {
             const response = await this.fetchWithTimeout(
@@ -167,23 +224,19 @@ export class NativeJsDataService {
                 {
                     method,
                     headers,
+                    credentials,
                     body: JSON.stringify(data)
                 },
                 options?.timeout
             );
 
-            let responseData: TResponse | null = null;
-            const contentType = response.headers.get('content-type');
-            
-            if (contentType?.includes('application/json')) {
-                responseData = await response.json() as TResponse;
-            }
+            const { data: responseData, error } = await this.parseResponse<TResponse>(response);
 
             return {
                 ok: response.ok,
                 status: response.status,
                 data: response.ok ? responseData : null,
-                error: response.ok ? null : `HTTP ${response.status}`
+                error
             };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -195,6 +248,76 @@ export class NativeJsDataService {
             };
         }
     }
+
+    /**
+     * Delete a resource (DELETE request without body)
+     */
+    async delete<TResponse = unknown>(
+        url: string,
+        options?: NativeJsDeleteOptions
+    ): Promise<NativeJsDataResponse<TResponse>> {
+        const fullUrl = this.buildUrl(url);
+        const headers = { ...this.defaultHeaders, ...options?.headers };
+        const credentials = options?.credentials || this.defaultCredentials;
+
+        try {
+            const response = await this.fetchWithTimeout(
+                fullUrl,
+                { method: 'DELETE', headers, credentials },
+                options?.timeout
+            );
+
+            const { data, error } = await this.parseResponse<TResponse>(response);
+
+            return {
+                ok: response.ok,
+                status: response.status,
+                data: response.ok ? data : null,
+                error
+            };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            return {
+                ok: false,
+                status: 0,
+                data: null,
+                error: errorMessage
+            };
+        }
+    }
+
+    /**
+     * Shorthand for POST request
+     */
+    async post<TResponse = unknown, TData = unknown>(
+        url: string,
+        data: TData,
+        options?: Omit<NativeJsSubmitOptions, 'method'>
+    ): Promise<NativeJsDataResponse<TResponse>> {
+        return this.submit<TResponse, TData>(url, data, { ...options, method: 'POST' });
+    }
+
+    /**
+     * Shorthand for PUT request
+     */
+    async put<TResponse = unknown, TData = unknown>(
+        url: string,
+        data: TData,
+        options?: Omit<NativeJsSubmitOptions, 'method'>
+    ): Promise<NativeJsDataResponse<TResponse>> {
+        return this.submit<TResponse, TData>(url, data, { ...options, method: 'PUT' });
+    }
+
+    /**
+     * Shorthand for PATCH request
+     */
+    async patch<TResponse = unknown, TData = unknown>(
+        url: string,
+        data: TData,
+        options?: Omit<NativeJsSubmitOptions, 'method'>
+    ): Promise<NativeJsDataResponse<TResponse>> {
+        return this.submit<TResponse, TData>(url, data, { ...options, method: 'PATCH' });
+    }
 }
 
 /**
@@ -204,7 +327,7 @@ export function createNativeJsDataService(options?: {
     state?: NativeJsState;
     baseUrl?: string;
     headers?: Record<string, string>;
+    credentials?: NativeJsCredentials;
 }): NativeJsDataService {
     return new NativeJsDataService(options);
 }
-

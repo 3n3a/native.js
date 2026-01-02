@@ -9,16 +9,22 @@ Every component has access to a data service via `this.data`:
 ```typescript
 class MyComponent extends NativeJsComponent {
   async onInit() {
-    // Fetch data
-    const response = await this.data.fetch('/api/users');
+    // GET request
+    const users = await this.data.fetch('/api/users');
     
-    // Submit data
-    const result = await this.data.submit('/api/form', { name: 'John' });
+    // POST request
+    const created = await this.data.post('/api/users', { name: 'John' });
+    
+    // PUT request
+    const updated = await this.data.put('/api/users/1', { name: 'Jane' });
+    
+    // DELETE request
+    const deleted = await this.data.delete('/api/users/1');
   }
 }
 ```
 
-## Fetching Data
+## Fetching Data (GET)
 
 ### Auto-Fetch (via attributes)
 
@@ -55,41 +61,100 @@ if (response.ok) {
 }
 ```
 
-### Fetch Response
+### Fetch Options
+
+```typescript
+await this.data.fetch('/api/resource', {
+  stateKey: 'data',         // Store result in state under this key
+  headers: { 'X-Custom': 'value' },
+  timeout: 5000,            // Request timeout in ms
+  credentials: 'include'    // Cookie handling: 'omit', 'same-origin', 'include'
+});
+```
+
+## Response Format
+
+All data methods return a unified response:
 
 ```typescript
 interface NativeJsDataResponse<T> {
-  ok: boolean;        // true if request succeeded
+  ok: boolean;        // true if request succeeded (2xx status)
   status: number;     // HTTP status code
   data: T | null;     // Response data (null on error)
-  error: string | null; // Error message (null on success)
+  error: string | null; // Error message from response or HTTP status
 }
 ```
 
-## Submitting Data
+## Submitting Data (POST/PUT/PATCH)
 
-Submit data to an endpoint. Results are NOT stored in state.
+### POST Request
 
 ```typescript
-const response = await this.data.submit('/api/form', {
+const response = await this.data.post('/api/users', {
   name: 'John',
   email: 'john@example.com'
 });
 
 if (response.ok) {
-  console.log('Submitted:', response.data);
+  console.log('Created:', response.data);
 } else {
   console.error('Failed:', response.error);
 }
 ```
 
-### Submit Options
+### PUT Request
+
+```typescript
+const response = await this.data.put('/api/users/1', {
+  name: 'Updated Name'
+});
+```
+
+### PATCH Request
+
+```typescript
+const response = await this.data.patch('/api/users/1', {
+  email: 'new@example.com'
+});
+```
+
+### Generic Submit
+
+Use `submit()` when you need to specify the method:
 
 ```typescript
 await this.data.submit('/api/resource', data, {
-  method: 'PUT',      // POST, PUT, PATCH, DELETE (default: POST)
+  method: 'PUT',            // POST, PUT, PATCH, DELETE (default: POST)
   headers: { 'X-Custom': 'value' },
-  timeout: 5000       // Request timeout in ms
+  timeout: 5000,
+  credentials: 'include'
+});
+```
+
+## Deleting Data (DELETE)
+
+```typescript
+const response = await this.data.delete('/api/users/1');
+
+if (response.ok) {
+  console.log('Deleted successfully');
+}
+```
+
+DELETE requests don't require a body.
+
+## Credentials / Cookies
+
+By default, credentials mode is `'same-origin'`. To send cookies cross-origin:
+
+```typescript
+// Component method
+await this.data.fetch('/api/auth', { credentials: 'include' });
+
+// Standalone service with default credentials
+const dataService = createNativeJsDataService({
+  baseUrl: 'https://api.example.com',
+  credentials: 'include'
 });
 ```
 
@@ -102,10 +167,13 @@ import { createNativeJsDataService } from 'native.js';
 
 const dataService = createNativeJsDataService({
   baseUrl: 'https://api.example.com',
-  headers: { 'Authorization': 'Bearer token' }
+  headers: { 'Authorization': 'Bearer token' },
+  credentials: 'include'
 });
 
 const response = await dataService.fetch('/users');
+await dataService.post('/users', { name: 'John' });
+await dataService.delete('/users/1');
 ```
 
 ## Multiple Data Sources
@@ -125,4 +193,3 @@ async onInit() {
   const posts = this.state.get('posts');
 }
 ```
-

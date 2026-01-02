@@ -408,31 +408,17 @@
     </template>
 
     <script type="module">
-        import { createNativeJs, NativeJsComponent, createNativeJsComponentRegistry } from "../lib/index.js";
+        import { createNativeJs, NativeJsComponent, createNativeJsComponentRegistry, createNativeJsDataService } from "../lib/index.js";
         
         const container = document.querySelector('#app');
         
-        // API helper
-        async function api(endpoint, options = {}) {
-            const response = await fetch(endpoint, {
-                ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                },
-                body: options.body ? JSON.stringify(options.body) : undefined
-            });
-            return response.json();
-        }
+        // Standalone data service for auth check (before component is mounted)
+        const authService = createNativeJsDataService();
         
         // Check if user is logged in
         async function checkAuth() {
-            try {
-                const result = await api('/api/me');
-                return result.user || null;
-            } catch {
-                return null;
-            }
+            const result = await authService.fetch('/api/me');
+            return result.ok ? result.data?.user : null;
         }
         
         // ==================== AUTH COMPONENT ====================
@@ -492,16 +478,14 @@
                 const form = e.target;
                 const formData = new FormData(form);
                 
-                const result = await api('/api/login', {
-                    method: 'POST',
-                    body: {
-                        username: formData.get('username'),
-                        password: formData.get('password')
-                    }
+                // Using Native.js data service
+                const result = await this.data.post('/api/login', {
+                    username: formData.get('username'),
+                    password: formData.get('password')
                 });
                 
-                if (result.error) {
-                    this.showError(result.error);
+                if (!result.ok) {
+                    this.showError(result.error || 'Login failed');
                 } else {
                     window.location.href = '/lists';
                 }
@@ -520,16 +504,14 @@
                     return;
                 }
                 
-                const result = await api('/api/register', {
-                    method: 'POST',
-                    body: {
-                        username: formData.get('username'),
-                        password: password
-                    }
+                // Using Native.js data service
+                const result = await this.data.post('/api/register', {
+                    username: formData.get('username'),
+                    password: password
                 });
                 
-                if (result.error) {
-                    this.showError(result.error);
+                if (!result.ok) {
+                    this.showError(result.error || 'Registration failed');
                 } else {
                     window.location.href = '/lists';
                 }
@@ -556,16 +538,18 @@
             }
             
             async logout() {
-                await api('/api/logout', { method: 'POST' });
+                await this.data.post('/api/logout', {});
                 window.location.href = '/';
             }
             
             async loadLists() {
                 const content = this.getChild('.lists-content');
-                const result = await api('/api/lists');
                 
-                if (result.lists?.length > 0) {
-                    content.innerHTML = result.lists.map(list => `
+                // Using Native.js data service with state storage
+                const result = await this.data.fetch('/api/lists', { stateKey: 'lists' });
+                
+                if (result.ok && result.data?.lists?.length > 0) {
+                    content.innerHTML = result.data.lists.map(list => `
                         <div class="list-item" data-id="${list.id}">
                             <span class="list-item-name">${this.escapeHtml(list.name)}</span>
                             <div class="list-item-actions">
@@ -603,10 +587,8 @@
                 
                 if (!name) return;
                 
-                await api('/api/lists', {
-                    method: 'POST',
-                    body: { name }
-                });
+                // Using Native.js data service
+                await this.data.post('/api/lists', { name });
                 
                 input.value = '';
                 this.loadLists();
@@ -614,7 +596,8 @@
             
             async deleteList(id) {
                 if (confirm('Delete this list and all its todos?')) {
-                    await api(`/api/lists/${id}`, { method: 'DELETE' });
+                    // Using Native.js data service
+                    await this.data.delete(`/api/lists/${id}`);
                     this.loadLists();
                 }
             }
@@ -670,7 +653,7 @@
             }
             
             async logout() {
-                await api('/api/logout', { method: 'POST' });
+                await this.data.post('/api/logout', {});
                 window.location.href = '/';
             }
             
@@ -684,18 +667,20 @@
             
             async loadTodos() {
                 const content = this.getChild('.todos-content');
-                const result = await api(`/api/lists/${this.listId}/todos`);
                 
-                if (result.error) {
+                // Using Native.js data service with state storage
+                const result = await this.data.fetch(`/api/lists/${this.listId}/todos`, { stateKey: 'todos' });
+                
+                if (!result.ok) {
                     window.location.href = '/lists';
                     return;
                 }
                 
                 // Set list name
-                this.getChild('.list-title-input').value = result.list.name;
+                this.getChild('.list-title-input').value = result.data.list.name;
                 
-                if (result.todos?.length > 0) {
-                    content.innerHTML = result.todos.map(todo => `
+                if (result.data?.todos?.length > 0) {
+                    content.innerHTML = result.data.todos.map(todo => `
                         <div class="todo-item" data-id="${todo.id}">
                             <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
                             <span class="todo-text ${todo.completed ? 'completed' : ''}">${this.escapeHtml(todo.text)}</span>
@@ -731,25 +716,22 @@
                 
                 if (!text) return;
                 
-                await api(`/api/lists/${this.listId}/todos`, {
-                    method: 'POST',
-                    body: { text }
-                });
+                // Using Native.js data service
+                await this.data.post(`/api/lists/${this.listId}/todos`, { text });
                 
                 input.value = '';
                 this.loadTodos();
             }
             
             async toggleTodo(todoId) {
-                await api(`/api/todos/${todoId}`, {
-                    method: 'PUT',
-                    body: { toggle: true }
-                });
+                // Using Native.js data service
+                await this.data.put(`/api/todos/${todoId}`, { toggle: true });
                 this.loadTodos();
             }
             
             async deleteTodo(todoId) {
-                await api(`/api/todos/${todoId}`, { method: 'DELETE' });
+                // Using Native.js data service
+                await this.data.delete(`/api/todos/${todoId}`);
                 this.loadTodos();
             }
             
@@ -757,14 +739,13 @@
                 const name = this.getChild('.list-title-input').value.trim();
                 if (!name) return;
                 
-                await api(`/api/lists/${this.listId}`, {
-                    method: 'PUT',
-                    body: { name }
-                });
+                // Using Native.js data service
+                await this.data.put(`/api/lists/${this.listId}`, { name });
             }
             
             async deleteList() {
-                await api(`/api/lists/${this.listId}`, { method: 'DELETE' });
+                // Using Native.js data service
+                await this.data.delete(`/api/lists/${this.listId}`);
                 window.location.href = '/lists';
             }
             

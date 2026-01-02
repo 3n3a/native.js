@@ -38,9 +38,11 @@ export {
 export type { NativeJsStorageType, NativeJsStorageBackend } from "./storage";
 export type { NativeJsStateData, NativeJsStateMode, NativeJsStateConfig } from "./state";
 export type { 
-    NativeJsHttpMethod, 
+    NativeJsHttpMethod,
+    NativeJsCredentials,
     NativeJsFetchOptions, 
-    NativeJsSubmitOptions, 
+    NativeJsSubmitOptions,
+    NativeJsDeleteOptions,
     NativeJsDataResponse 
 } from "./service";
 
