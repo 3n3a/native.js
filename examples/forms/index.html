@@ -120,11 +120,35 @@
             padding: 1.5rem;
             margin: 1.5rem 0;
         }
+        
+        .event-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+        .event-log-entry {
+            margin: 0.25rem 0;
+        }
+        .event-log-entry.info { color: #6bb3f8; }
+        .event-log-entry.success { color: #85e89d; }
+        .event-log-entry.error { color: #f97583; }
     </style>
 </head>
 <body>
     <h1>Native.js Form Components</h1>
     <p>Pre-built form components for common patterns. Just define the URL and fields!</p>
+    <p><em>This example uses Dependency Injection for event logging.</em></p>
+
+    <!-- Event Log -->
+    <div class="event-log" id="event-log">
+        <div class="event-log-entry info">Event log initialized...</div>
+    </div>
 
     <!-- ================================ -->
     <!-- Fetch Form: Search Example -->
@@ -280,18 +304,63 @@ document.querySelector('n-submit-form').addEventListener('n-submit-error', (e) =
 
     <script type="module">
         import { 
-            createNativeJsComponentRegistry, 
+            createNativeJsDIContainer, 
+            NativeJsService,
             registerDefaultComponents 
         } from "../lib/index.js";
         
+        // ============================================
+        // EVENT LOGGER SERVICE - DI Example
+        // ============================================
+        class EventLoggerService extends NativeJsService {
+            constructor(container) {
+                super(container);
+                this.logEl = document.getElementById('event-log');
+            }
+            
+            log(type, message, data) {
+                const time = new Date().toLocaleTimeString();
+                const entry = document.createElement('div');
+                entry.className = `event-log-entry ${type}`;
+                entry.textContent = `[${time}] ${message}`;
+                if (data) {
+                    entry.textContent += ` ${JSON.stringify(data)}`;
+                }
+                this.logEl.appendChild(entry);
+                this.logEl.scrollTop = this.logEl.scrollHeight;
+                
+                // Also log to console
+                console.log(`[${type.toUpperCase()}] ${message}`, data || '');
+            }
+            
+            info(message, data) { this.log('info', message, data); }
+            success(message, data) { this.log('success', message, data); }
+            error(message, data) { this.log('error', message, data); }
+        }
+        
+        // ============================================
+        // CREATE DI CONTAINER AND REGISTER SERVICES
+        // ============================================
+        const container = createNativeJsDIContainer();
+        container.singleton('logger', EventLoggerService);
+        
+        // Get the logger service
+        const logger = container.resolve('logger');
+        logger.info('DI Container initialized with EventLoggerService');
+        
         // Register all default components (includes n-fetch-form and n-submit-form)
-        const registry = createNativeJsComponentRegistry();
-        registerDefaultComponents(registry);
+        registerDefaultComponents();
+        logger.info('Default components registered');
+        
+        // ============================================
+        // SETUP EVENT LISTENERS
+        // ============================================
         
         // Listen for search results and display them
         document.getElementById('search-results').addEventListener('n-data-received', (e) => {
             const container = e.target;
             const data = e.detail.data;
+            logger.success('Search results received', { count: data?.results?.length || 0 });
             
             if (data?.results?.length > 0) {
                 container.innerHTML = data.results.map(item => `
@@ -330,6 +399,12 @@ document.querySelector('n-submit-form').addEventListener('n-submit-error', (e) =
                 );
             }
             
+            logger.success('Users filtered', { 
+                total: data?.users?.length || 0, 
+                filtered: users.length,
+                filters: { role: roleFilter || 'all', search: searchFilter || 'none' }
+            });
+            
             if (users.length > 0) {
                 container.innerHTML = users.map(user => `
                     <div class="result-item">
@@ -342,19 +417,20 @@ document.querySelector('n-submit-form').addEventListener('n-submit-error', (e) =
             }
         });
         
-        // Log all form events for demonstration
+        // Log all form events using injected logger service
         document.querySelectorAll('n-fetch-form').forEach(form => {
-            form.addEventListener('n-fetch-start', () => console.log('Fetch started'));
-            form.addEventListener('n-fetch-success', (e) => console.log('Fetch success:', e.detail));
-            form.addEventListener('n-fetch-error', (e) => console.log('Fetch error:', e.detail));
+            form.addEventListener('n-fetch-start', () => logger.info('Fetch started'));
+            form.addEventListener('n-fetch-success', (e) => logger.success('Fetch success', { status: e.detail.status }));
+            form.addEventListener('n-fetch-error', (e) => logger.error('Fetch error', { error: e.detail.error }));
         });
         
         document.querySelectorAll('n-submit-form').forEach(form => {
-            form.addEventListener('n-submit-start', (e) => console.log('Submit started:', e.detail));
-            form.addEventListener('n-submit-success', (e) => console.log('Submit success:', e.detail));
-            form.addEventListener('n-submit-error', (e) => console.log('Submit error:', e.detail));
+            form.addEventListener('n-submit-start', () => logger.info('Submit started'));
+            form.addEventListener('n-submit-success', (e) => logger.success('Submit success', { data: e.detail.data }));
+            form.addEventListener('n-submit-error', (e) => logger.error('Submit error', { error: e.detail.error }));
         });
+        
+        logger.info('All event listeners attached');
     </script>
 </body>
 </html>
-

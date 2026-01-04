@@ -48,10 +48,10 @@
         <p>This component fetches data automatically when mounted:</p>
         <n-user-list n-fetch="../api/users.json" n-fetch-key="users"></n-user-list>
         
-        <h2>Manual Fetch (this.data.fetch)</h2>
+        <h2>Manual Fetch (using injected DataService)</h2>
         <n-posts-list></n-posts-list>
         
-        <h2>Submit Data (this.data.submit)</h2>
+        <h2>Submit Data (using injected DataService)</h2>
         <n-contact-form></n-contact-form>
         
         <n-footer></n-footer>
@@ -131,9 +131,59 @@
     </template>
     
     <script type="module">
-        import { createNativeJs, NativeJsComponent, createNativeJsComponentRegistry } from "../lib/index.js";
+        import { 
+            createNativeJs, 
+            NativeJsComponent, 
+            NativeJsService,
+            createNativeJsComponentRegistry 
+        } from "../lib/index.js";
         
         const container = document.querySelector('#app');
+
+        // ============================================
+        // DATA SERVICE - Injectable service for API calls
+        // ============================================
+        class DataService extends NativeJsService {
+            constructor(container) {
+                super(container);
+                this.baseUrl = '../api';
+            }
+            
+            async getUsers() {
+                const response = await fetch(`${this.baseUrl}/users.json`);
+                return response.json();
+            }
+            
+            async getPosts() {
+                const response = await fetch(`${this.baseUrl}/posts.json`);
+                return response.json();
+            }
+            
+            async submitContact(data) {
+                // Simulated submit - in real app would POST to server
+                await new Promise(r => setTimeout(r, 500)); // Simulate network delay
+                const response = await fetch(`${this.baseUrl}/submit-response.json`);
+                return response.json();
+            }
+        }
+
+        // ============================================
+        // LOGGER SERVICE - Example of another injectable service
+        // ============================================
+        class LoggerService extends NativeJsService {
+            constructor(container) {
+                super(container);
+                this.prefix = '[Native.js]';
+            }
+            
+            log(message, data) {
+                console.log(`${this.prefix} ${message}`, data || '');
+            }
+            
+            error(message, error) {
+                console.error(`${this.prefix} ${message}`, error || '');
+            }
+        }
 
         // ============================================
         // User List Component (Auto-fetch example)
@@ -141,14 +191,15 @@
         class UserListElement extends NativeJsComponent {
             static tagName = 'n-user-list';
             static templateId = 'tpl-user-list';
+            static dependencies = ['logger'];
 
             onInit() {
+                this.logger.log('UserList component initialized');
                 this.updateDisplay();
             }
 
             onDataFetched(stateKey, data, error) {
-                // Called after auto-fetch completes
-                console.log('Users fetched:', { stateKey, data, error });
+                this.logger.log('Users fetched via n-fetch attribute', { stateKey, data, error });
                 this.updateDisplay();
             }
 
@@ -181,13 +232,15 @@
         }
 
         // ============================================
-        // Posts List Component (Manual fetch example)
+        // Posts List Component (Manual fetch using injected service)
         // ============================================
         class PostsListElement extends NativeJsComponent {
             static tagName = 'n-posts-list';
             static templateId = 'tpl-posts-list';
+            static dependencies = ['dataService', 'logger'];
 
             onInit() {
+                this.logger.log('PostsList component initialized');
                 const fetchBtn = this.getChild('.fetch-btn');
                 fetchBtn?.addEventListener('click', () => this.fetchPosts());
             }
@@ -199,32 +252,40 @@
                 if (loadingEl) loadingEl.innerHTML = '<p class="loading">Loading posts...</p>';
                 if (containerEl) containerEl.innerHTML = '';
 
-                // Manual fetch - stores result in state under 'posts' key
-                const response = await this.data.fetch('../api/posts.json', { stateKey: 'posts' });
+                try {
+                    // Use injected data service instead of this.data
+                    const data = await this.dataService.getPosts();
+                    this.logger.log('Posts fetched via DataService', data);
+                    
+                    if (loadingEl) loadingEl.innerHTML = '';
 
-                if (loadingEl) loadingEl.innerHTML = '';
-
-                if (response.ok && containerEl) {
-                    const posts = response.data?.posts || [];
-                    containerEl.innerHTML = posts.map(post => `
-                        <div class="user-card">
-                            <h4>${post.title}</h4>
-                            <p>${post.content}</p>
-                            <small>By ${post.author} on ${post.date}</small>
-                        </div>
-                    `).join('');
+                    if (containerEl) {
+                        const posts = data?.posts || [];
+                        containerEl.innerHTML = posts.map(post => `
+                            <div class="user-card">
+                                <h4>${post.title}</h4>
+                                <p>${post.content}</p>
+                                <small>By ${post.author} on ${post.date}</small>
+                            </div>
+                        `).join('');
+                    }
+                } catch (error) {
+                    this.logger.error('Failed to fetch posts', error);
+                    if (loadingEl) loadingEl.innerHTML = '<p class="error">Failed to load posts</p>';
                 }
             }
         }
 
         // ============================================
-        // Contact Form Component (Submit example)
+        // Contact Form Component (Submit using injected service)
         // ============================================
         class ContactFormElement extends NativeJsComponent {
             static tagName = 'n-contact-form';
             static templateId = 'tpl-contact-form';
+            static dependencies = ['dataService', 'logger'];
 
             onInit() {
+                this.logger.log('ContactForm component initialized');
                 const form = this.getChild('form');
                 form?.addEventListener('submit', (e) => this.handleSubmit(e));
             }
@@ -240,24 +301,27 @@
                     resultContainer.innerHTML = '<p class="loading">Submitting...</p>';
                 }
 
-                // Submit data - result is NOT stored in state
-                // Note: For demo, we fetch the mock response since we can't actually POST to JSON
-                const response = await this.data.fetch('../api/submit-response.json');
+                try {
+                    // Use injected data service
+                    const response = await this.dataService.submitContact(data);
+                    this.logger.log('Form submitted via DataService', response);
 
-                if (resultContainer) {
-                    if (response.ok) {
+                    if (resultContainer) {
                         resultContainer.innerHTML = `
                             <div class="submit-result">
                                 <strong>Success!</strong><br>
-                                ${response.data?.message}<br>
-                                <small>ID: ${response.data?.id}</small>
+                                ${response.message}<br>
+                                <small>ID: ${response.id}</small>
                             </div>
                         `;
                         form.reset();
-                    } else {
+                    }
+                } catch (error) {
+                    this.logger.error('Form submission failed', error);
+                    if (resultContainer) {
                         resultContainer.innerHTML = `
                             <div class="submit-result error">
-                                <strong>Error:</strong> ${response.error}
+                                <strong>Error:</strong> ${error.message}
                             </div>
                         `;
                     }
@@ -271,11 +335,13 @@
         class CounterElement extends NativeJsComponent {
             static tagName = 'n-counter';
             static templateId = 'tpl-counter';
+            static dependencies = ['logger'];
 
             onInit() {
                 if (!this.state.has('count')) {
                     this.state.set('count', 0);
                 }
+                this.logger.log('Counter initialized', { mode: this.state.getMode() });
                 this.updateDisplay();
                 this.setupEventListeners();
             }
@@ -330,7 +396,7 @@
         }
 
         // ============================================
-        // Register & Run
+        // Register & Run with DI
         // ============================================
         const registry = createNativeJsComponentRegistry();
         registry.registerComponentClass(FooterElement);
@@ -345,8 +411,20 @@
             { pathname: '/state-demo', element: StateDemoElement }
         ];
 
+        // Create app
         const nativeJs = createNativeJs(container, routes);
+        
+        // Register services with DI container
+        nativeJs.singleton('logger', LoggerService);
+        nativeJs.singleton('dataService', DataService);
+        
+        // Start the app
         nativeJs.run();
+        
+        // Log that DI is active
+        nativeJs.resolve('logger').log('App started with DI', {
+            services: nativeJs.container.getTokens()
+        });
 
         window.nativeJs = nativeJs;
     </script>
