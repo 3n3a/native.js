@@ -411,35 +411,191 @@
     <script type="module">
         import { 
             createNativeJs, 
-            NativeJsComponent, 
-            createNativeJsComponentRegistry,
-            createNativeJsDataService,
+            NativeJsComponent,
+            NativeJsService,
             registerDefaultComponents,
-            navigateTo,
-            escapeHtml
+            navigateTo
         } from "../lib/index.js";
         
         // Register default components (n-submit-form, n-list, n-modal, etc.)
         registerDefaultComponents();
         
-        const container = document.querySelector('#app');
-        const authService = createNativeJsDataService({ credentials: 'include' });
-        
-        async function checkAuth() {
-            const result = await authService.fetch('/api/me');
-            return result.ok ? result.data?.user : null;
+        // ============================================
+        // AUTH SERVICE - Manages authentication state
+        // ============================================
+        class AuthService extends NativeJsService {
+            constructor(container) {
+                super(container);
+                this._user = null;
+                this._checked = false;
+                this._listeners = new Set();
+            }
+            
+            get isAuthenticated() {
+                return this._user !== null;
+            }
+            
+            get user() {
+                return this._user;
+            }
+            
+            get isChecked() {
+                return this._checked;
+            }
+            
+            /**
+             * Check authentication status with server
+             */
+            async checkAuth() {
+                try {
+                    const response = await fetch('/api/me', { credentials: 'include' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        this._user = data.user;
+                    } else {
+                        this._user = null;
+                    }
+                } catch {
+                    this._user = null;
+                }
+                this._checked = true;
+                this._notifyListeners();
+                return this._user;
+            }
+            
+            /**
+             * Set user after successful login/register
+             */
+            setUser(user) {
+                this._user = user;
+                this._checked = true;
+                this._notifyListeners();
+            }
+            
+            /**
+             * Clear user on logout
+             */
+            clearUser() {
+                this._user = null;
+                this._notifyListeners();
+            }
+            
+            /**
+             * Logout - calls server and clears state
+             */
+            async logout() {
+                await fetch('/api/logout', { 
+                    method: 'POST', 
+                    credentials: 'include' 
+                });
+                this.clearUser();
+            }
+            
+            /**
+             * Subscribe to auth state changes
+             */
+            subscribe(callback) {
+                this._listeners.add(callback);
+                return () => this._listeners.delete(callback);
+            }
+            
+            _notifyListeners() {
+                this._listeners.forEach(cb => cb(this.isAuthenticated, this._user));
+            }
         }
         
-        // ==================== AUTH ====================
+        // ============================================
+        // API SERVICE - HTTP requests with auth
+        // ============================================
+        class ApiService extends NativeJsService {
+            constructor(container) {
+                super(container);
+                this.auth = this.resolve('auth');
+            }
+            
+            async fetch(url) {
+                const response = await fetch(url, { credentials: 'include' });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            }
+            
+            async post(url, data) {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                return { ok: response.ok, data: await response.json() };
+            }
+            
+            async put(url, data) {
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                return { ok: response.ok, data: await response.json() };
+            }
+            
+            async delete(url) {
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                return { ok: response.ok };
+            }
+            
+            // === Lists API ===
+            async getLists() {
+                return this.fetch('/api/lists');
+            }
+            
+            async deleteList(id) {
+                return this.delete(`/api/lists/${id}`);
+            }
+            
+            async updateList(id, data) {
+                return this.put(`/api/lists/${id}`, data);
+            }
+            
+            // === Todos API ===
+            async getTodos(listId) {
+                return this.fetch(`/api/lists/${listId}/todos`);
+            }
+            
+            async toggleTodo(id) {
+                return this.put(`/api/todos/${id}`, { toggle: true });
+            }
+            
+            async deleteTodo(id) {
+                return this.delete(`/api/todos/${id}`);
+            }
+        }
+        
+        // ============================================
+        // AUTH PAGE COMPONENT
+        // ============================================
         class AuthPage extends NativeJsComponent {
             static tagName = 'n-auth-page';
             static templateId = 'tpl-auth';
+            static dependencies = ['auth'];
             
             onInit() {
+                // Redirect if already authenticated
+                if (this.auth.isAuthenticated) {
+                    navigateTo('/lists');
+                    return;
+                }
+                
                 const tabs = this.getChildren('.auth-tab');
                 const loginForm = this.getChild('#login-form');
                 const registerForm = this.getChild('#register-form');
                 
+                // Tab switching
                 tabs.forEach(tab => {
                     tab.addEventListener('click', () => {
                         tabs.forEach(t => t.classList.remove('active'));
@@ -450,8 +606,9 @@
                     });
                 });
                 
-                // Handle login form
-                loginForm.addEventListener('n-submit-success', () => {
+                // Handle login success
+                loginForm.addEventListener('n-submit-success', (e) => {
+                    this.auth.setUser(e.detail.data.user);
                     navigateTo('/lists');
                 });
                 
@@ -459,7 +616,7 @@
                     this.showError(e.detail.error || 'Login failed');
                 });
                 
-                // Handle register form with password confirmation
+                // Handle register with password confirmation
                 registerForm.addEventListener('n-submit-start', (e) => {
                     const form = registerForm.querySelector('form');
                     if (form.password.value !== form.password_confirm.value) {
@@ -468,7 +625,8 @@
                     }
                 });
                 
-                registerForm.addEventListener('n-submit-success', () => {
+                registerForm.addEventListener('n-submit-success', (e) => {
+                    this.auth.setUser(e.detail.data.user);
                     navigateTo('/lists');
                 });
                 
@@ -488,27 +646,37 @@
             }
         }
         
-        // ==================== LISTS ====================
+        // ============================================
+        // LISTS PAGE COMPONENT
+        // ============================================
         class ListsPage extends NativeJsComponent {
             static tagName = 'n-lists-page';
             static templateId = 'tpl-lists';
+            static dependencies = ['auth', 'api'];
             
             deleteListId = null;
-            listEl = null;
-            modal = null;
             
             async onInit() {
-                const user = await checkAuth();
-                if (!user) {
-                    navigateTo('/');
-                    return;
+                // Check authentication via injected auth service
+                if (!this.auth.isAuthenticated) {
+                    await this.auth.checkAuth();
+                    if (!this.auth.isAuthenticated) {
+                        navigateTo('/');
+                        return;
+                    }
                 }
                 
                 this.listEl = this.getChild('#lists-list');
                 this.modal = this.getChild('#delete-list-modal');
                 
-                this.getChild('.username').textContent = user.username;
-                this.getChild('.logout-btn').addEventListener('click', () => this.logout());
+                // Display username from auth service
+                this.getChild('.username').textContent = this.auth.user.username;
+                
+                // Logout button uses auth service
+                this.getChild('.logout-btn').addEventListener('click', async () => {
+                    await this.auth.logout();
+                    navigateTo('/');
+                });
                 
                 // Handle add list form
                 this.getChild('#add-list-form').addEventListener('n-submit-success', () => {
@@ -523,7 +691,7 @@
                     }
                 });
                 
-                // Handle delete button (using event delegation)
+                // Handle delete button
                 this.listEl.addEventListener('click', (e) => {
                     if (e.target.classList.contains('delete-btn')) {
                         e.stopPropagation();
@@ -532,10 +700,10 @@
                     }
                 });
                 
-                // Handle modal confirm
+                // Handle modal confirm - uses api service
                 this.modal.addEventListener('n-modal-confirm', async () => {
                     if (this.deleteListId) {
-                        await this.data.delete(`/api/lists/${this.deleteListId}`);
+                        await this.api.deleteList(this.deleteListId);
                         this.modal.close();
                         this.deleteListId = null;
                         this.loadLists();
@@ -545,38 +713,35 @@
                 this.loadLists();
             }
             
-            async logout() {
-                await this.data.post('/api/logout', {});
-                navigateTo('/');
-            }
-            
             async loadLists() {
-                const result = await this.data.fetch('/api/lists');
-                
-                if (result.ok && result.data?.lists) {
-                    this.listEl.setItems(result.data.lists);
-                } else {
+                try {
+                    const data = await this.api.getLists();
+                    this.listEl.setItems(data.lists || []);
+                } catch {
                     this.listEl.setItems([]);
                 }
             }
         }
         
-        // ==================== TODOS ====================
+        // ============================================
+        // TODOS PAGE COMPONENT
+        // ============================================
         class TodosPage extends NativeJsComponent {
             static tagName = 'n-todos-page';
             static templateId = 'tpl-todos';
+            static dependencies = ['auth', 'api'];
             
             listId = null;
-            todosEl = null;
-            deleteListModal = null;
-            deleteTodoModal = null;
             deleteTodoId = null;
             
             async onInit(urlPatternResult) {
-                const user = await checkAuth();
-                if (!user) {
-                    navigateTo('/');
-                    return;
+                // Check authentication via injected auth service
+                if (!this.auth.isAuthenticated) {
+                    await this.auth.checkAuth();
+                    if (!this.auth.isAuthenticated) {
+                        navigateTo('/');
+                        return;
+                    }
                 }
                 
                 this.listId = urlPatternResult?.pathname?.groups?.id;
@@ -593,8 +758,15 @@
                 const addTodoForm = this.getChild('#add-todo-form');
                 addTodoForm.setAttribute('n-action', `/api/lists/${this.listId}/todos`);
                 
-                this.getChild('.username').textContent = user.username;
-                this.getChild('.logout-btn').addEventListener('click', () => this.logout());
+                // Display username from auth service
+                this.getChild('.username').textContent = this.auth.user.username;
+                
+                // Logout button uses auth service
+                this.getChild('.logout-btn').addEventListener('click', async () => {
+                    await this.auth.logout();
+                    navigateTo('/');
+                });
+                
                 this.getChild('.back-btn').addEventListener('click', () => navigateTo('/lists'));
                 this.getChild('.delete-list-btn').addEventListener('click', () => this.deleteListModal.open());
                 
@@ -612,14 +784,14 @@
                     this.loadTodos();
                 });
                 
-                // Handle checkbox toggle (event delegation)
+                // Handle checkbox toggle
                 this.todosEl.addEventListener('change', (e) => {
                     if (e.target.classList.contains('todo-checkbox')) {
                         this.toggleTodo(e.target.dataset.id);
                     }
                 });
                 
-                // Handle delete button (event delegation)
+                // Handle delete button
                 this.todosEl.addEventListener('click', (e) => {
                     if (e.target.classList.contains('delete-todo-btn')) {
                         e.stopPropagation();
@@ -628,17 +800,17 @@
                     }
                 });
                 
-                // Handle delete list modal confirm
+                // Handle delete list modal - uses api service
                 this.deleteListModal.addEventListener('n-modal-confirm', async () => {
-                    await this.data.delete(`/api/lists/${this.listId}`);
+                    await this.api.deleteList(this.listId);
                     this.deleteListModal.close();
                     navigateTo('/lists');
                 });
                 
-                // Handle delete todo modal confirm
+                // Handle delete todo modal - uses api service
                 this.deleteTodoModal.addEventListener('n-modal-confirm', async () => {
                     if (this.deleteTodoId) {
-                        await this.data.delete(`/api/todos/${this.deleteTodoId}`);
+                        await this.api.deleteTodo(this.deleteTodoId);
                         this.deleteTodoModal.close();
                         this.deleteTodoId = null;
                         this.loadTodos();
@@ -648,25 +820,14 @@
                 this.loadTodos();
             }
             
-            async logout() {
-                await this.data.post('/api/logout', {});
-                navigateTo('/');
-            }
-            
             async loadTodos() {
-                const result = await this.data.fetch(`/api/lists/${this.listId}/todos`);
-                
-                if (!result.ok) {
-                    navigateTo('/lists');
-                    return;
-                }
-                
-                this.getChild('.list-title-input').value = result.data.list.name;
-                
-                if (result.data.todos) {
-                    this.todosEl.setItems(result.data.todos);
+                try {
+                    const data = await this.api.getTodos(this.listId);
                     
-                    // Set checkbox states and completed class after render
+                    this.getChild('.list-title-input').value = data.list.name;
+                    this.todosEl.setItems(data.todos || []);
+                    
+                    // Set checkbox states after render
                     this.todosEl.querySelectorAll('.todo-item').forEach(item => {
                         const isCompleted = item.dataset.completed === '1';
                         const checkbox = item.querySelector('.todo-checkbox');
@@ -674,36 +835,46 @@
                         if (checkbox) checkbox.checked = isCompleted;
                         if (text && isCompleted) text.classList.add('completed');
                     });
-                } else {
-                    this.todosEl.setItems([]);
+                } catch {
+                    navigateTo('/lists');
                 }
             }
             
             async toggleTodo(id) {
-                await this.data.put(`/api/todos/${id}`, { toggle: true });
+                await this.api.toggleTodo(id);
                 this.loadTodos();
             }
             
             async updateListName() {
                 const name = this.getChild('.list-title-input').value.trim();
                 if (name) {
-                    await this.data.put(`/api/lists/${this.listId}`, { name });
+                    await this.api.updateList(this.listId, { name });
                 }
             }
         }
         
-        // ==================== INIT ====================
-        const registry = createNativeJsComponentRegistry();
+        // ============================================
+        // INITIALIZE APP WITH DI
+        // ============================================
+        const app = createNativeJs(
+            document.getElementById('app'),
+            [
+                { pathname: '/', element: AuthPage },
+                { pathname: '/lists', element: ListsPage },
+                { pathname: '/list/:id', element: TodosPage }
+            ],
+            { basePath: '' }
+        );
         
-        const routes = [
-            { pathname: '/', element: AuthPage },
-            { pathname: '/lists', element: ListsPage },
-            { pathname: '/list/:id', element: TodosPage }
-        ];
+        // Register services - order matters (auth first since api depends on it)
+        app.singleton('auth', AuthService);
+        app.singleton('api', ApiService);
         
-        // basePath: '' because this app runs at the root of its own server
-        const nativeJs = createNativeJs(container, routes, { basePath: '' });
-        nativeJs.run();
+        // Start the app
+        app.run();
+        
+        // Initial auth check
+        app.resolve('auth').checkAuth();
     </script>
 </body>
 </html>
