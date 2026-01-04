@@ -1,8 +1,38 @@
 import { NativeJsComponentAlreadyExistsError, NativeJsComponentNotExistsError } from "./error";
+import { createNativeJsDIContainer, NativeJsDIContainer } from "./di";
 import type { NativeJsComponentClass, NativeRoute, NativeRouteInput, NativeRouteList, NativeRouteListInput } from "./interfaces";
 import { createRouter, type NativeRouter } from "./router";
 import { NativeJsDataService } from "./service";
 import { NativeJsState } from "./state";
+
+// Global DI container reference (set by NativeJs instance)
+let _globalContainer: NativeJsDIContainer | null = null;
+
+/**
+ * Get the global DI container
+ * @throws Error if no container is set
+ */
+export function getContainer(): NativeJsDIContainer {
+    if (!_globalContainer) {
+        throw new Error('[NativeJs] No DI container available. Initialize NativeJs first.');
+    }
+    return _globalContainer;
+}
+
+/**
+ * Try to get the global DI container (returns undefined if not set)
+ */
+export function tryGetContainer(): NativeJsDIContainer | undefined {
+    return _globalContainer || undefined;
+}
+
+/**
+ * Resolve a service from the global container
+ * Convenience function for quick access
+ */
+export function inject<T>(token: string): T {
+    return getContainer().resolve<T>(token);
+}
 
 /**
  * Base class for all Native.js components.
@@ -19,6 +49,14 @@ export abstract class NativeJsComponent extends HTMLElement {
      * The ID of the template element to clone for this component
      */
     static templateId: string;
+
+    /**
+     * Dependencies to inject from the container
+     * Override in subclass to specify dependencies
+     * @example
+     * static dependencies = ['authService', 'apiService'];
+     */
+    static dependencies: string[] = [];
 
     /**
      * Route pattern result (set by router before insertion)
@@ -41,6 +79,11 @@ export abstract class NativeJsComponent extends HTMLElement {
     private _data: NativeJsDataService | null = null;
 
     /**
+     * DI container reference
+     */
+    private _container: NativeJsDIContainer | null = null;
+
+    /**
      * Whether the template has been rendered
      */
     private _templateRendered: boolean = false;
@@ -52,6 +95,20 @@ export abstract class NativeJsComponent extends HTMLElement {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Get the DI container
+     */
+    get container(): NativeJsDIContainer {
+        if (!this._container) {
+            // Fallback to global container
+            this._container = _globalContainer;
+        }
+        if (!this._container) {
+            throw new Error('[NativeJs] No DI container available');
+        }
+        return this._container;
     }
 
     /**
@@ -77,15 +134,36 @@ export abstract class NativeJsComponent extends HTMLElement {
     }
 
     /**
+     * Resolve a service from the DI container
+     * Convenience method for component use
+     */
+    protected inject<T>(token: string): T {
+        return this.container.resolve<T>(token);
+    }
+
+    /**
+     * Try to resolve a service from the DI container
+     */
+    protected tryInject<T>(token: string): T | undefined {
+        return this.container.tryResolve<T>(token);
+    }
+
+    /**
      * Native Web Component lifecycle - called when element is added to DOM.
      * Renders the template and calls onInit.
      */
     connectedCallback() {
+        // Get container reference
+        this._container = _globalContainer;
+        
         // Initialize state manager
         this._state = new NativeJsState(this);
         
         // Initialize data service with state binding
         this._data = new NativeJsDataService({ state: this._state });
+        
+        // Inject declared dependencies
+        this.injectDependencies();
         
         this.renderTemplate();
         
@@ -93,6 +171,23 @@ export abstract class NativeJsComponent extends HTMLElement {
         this.handleAutoFetch();
         
         this.onInit(this.urlPatternResult, this.routeState);
+    }
+
+    /**
+     * Inject dependencies declared in static dependencies array
+     */
+    private injectDependencies(): void {
+        const constructor = this.constructor as typeof NativeJsComponent;
+        const deps = constructor.dependencies || [];
+        
+        if (!this._container || deps.length === 0) return;
+        
+        for (const token of deps) {
+            if (this._container.has(token)) {
+                // Set as property on the component
+                (this as Record<string, unknown>)[token] = this._container.resolve(token);
+            }
+        }
     }
 
     /**
@@ -261,14 +356,71 @@ export function navigateTo(url: string, state: object = {}): void {
  * Main Native.js application class
  */
 export class NativeJs {
-    host: HTMLElement;
-    registry: NativeJsComponentRegistry;
-    router: NativeRouter;
+    readonly host: HTMLElement;
+    readonly registry: NativeJsComponentRegistry;
+    readonly router: NativeRouter;
+    readonly container: NativeJsDIContainer;
 
-    constructor(host: HTMLElement, router: NativeRouter, registry: NativeJsComponentRegistry) {
+    constructor(
+        host: HTMLElement, 
+        router: NativeRouter, 
+        registry: NativeJsComponentRegistry,
+        container: NativeJsDIContainer
+    ) {
         this.host = host;
         this.registry = registry;
         this.router = router;
+        this.container = container;
+    }
+
+    /**
+     * Register a service with the DI container
+     * Convenience method for fluent configuration
+     */
+    public register<T>(
+        token: string, 
+        provider: ((container: NativeJsDIContainer) => T) | (new (container: NativeJsDIContainer) => T),
+        lifecycle: 'singleton' | 'transient' = 'singleton'
+    ): this {
+        this.container.register(token, provider, lifecycle);
+        return this;
+    }
+
+    /**
+     * Register a singleton service
+     */
+    public singleton<T>(
+        token: string, 
+        provider: ((container: NativeJsDIContainer) => T) | (new (container: NativeJsDIContainer) => T)
+    ): this {
+        this.container.singleton(token, provider);
+        return this;
+    }
+
+    /**
+     * Register a transient service (new instance each time)
+     */
+    public transient<T>(
+        token: string, 
+        provider: ((container: NativeJsDIContainer) => T) | (new (container: NativeJsDIContainer) => T)
+    ): this {
+        this.container.transient(token, provider);
+        return this;
+    }
+
+    /**
+     * Register an existing instance
+     */
+    public instance<T>(token: string, value: T): this {
+        this.container.instance(token, value);
+        return this;
+    }
+
+    /**
+     * Resolve a service from the container
+     */
+    public resolve<T>(token: string): T {
+        return this.container.resolve<T>(token);
     }
 
     /**
@@ -276,6 +428,7 @@ export class NativeJs {
      */
     public run() {
         activeNativeJsInstance = this;
+        _globalContainer = this.container;
         this.router.start();
     }
 
@@ -328,7 +481,14 @@ function createRouteFromInput<T extends NativeJsComponent>(
 export interface NativeJsOptions {
     /** Base path for all routes (empty string for root, auto-detected if not set) */
     basePath?: string;
+    /** Existing DI container to use (creates new one if not provided) */
+    container?: NativeJsDIContainer;
 }
+
+/**
+ * Service registration callback for configuring the DI container
+ */
+export type NativeJsServicesConfig = (container: NativeJsDIContainer) => void;
 
 export function createNativeJs<T extends NativeJsComponent>(
     host: HTMLElement, 
@@ -336,12 +496,17 @@ export function createNativeJs<T extends NativeJsComponent>(
     options?: NativeJsOptions
 ) {
     const registry = createNativeJsComponentRegistry();
+    const container = options?.container || createNativeJsDIContainer();
     const nativeRoutes = getNativeRoutesFromInput(registry, routes);
     const router = createRouter(registry, nativeRoutes, { 
         host, 
         basePath: options?.basePath 
     });
-    return new NativeJs(host, router, registry);
+    
+    // Set global container early so it's available during service registration
+    _globalContainer = container;
+    
+    return new NativeJs(host, router, registry, container);
 }
 
 // Legacy exports for backwards compatibility

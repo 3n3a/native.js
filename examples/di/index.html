@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Native.js - Dependency Injection Example</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #e5e5e5;
+            --muted: #888;
+            --accent: #3b82f6;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3 {
+            font-weight: 500;
+            margin-top: 0;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+        }
+        
+        .status.authenticated {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .status.unauthenticated {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .log-container {
+            background: #0a0a0a;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1rem;
+            font-size: 0.8rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 0.25rem 0;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-entry .time {
+            color: var(--muted);
+            margin-right: 0.5rem;
+        }
+        
+        .log-entry.info { color: var(--accent); }
+        .log-entry.success { color: var(--success); }
+        .log-entry.error { color: var(--error); }
+        
+        .section {
+            margin-bottom: 1rem;
+        }
+        
+        .section p {
+            color: var(--muted);
+            margin: 0.5rem 0;
+        }
+        
+        code {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        a {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dependency Injection Example</h1>
+        
+        <p style="color: var(--muted); margin-bottom: 2rem;">
+            This example demonstrates Native.js DI system with services that share state.
+            The <code>AuthService</code> manages authentication state, and the 
+            <code>ApiService</code> uses it to make authenticated requests.
+        </p>
+        
+        <div id="app"></div>
+        
+        <p style="margin-top: 2rem; text-align: center;">
+            <a href="../index.html">← Back to examples</a>
+        </p>
+    </div>
+    
+    <!-- Templates -->
+    <template id="demo-page">
+        <div class="card">
+            <h2>Auth Service Status</h2>
+            <div class="section">
+                <span class="status unauthenticated" id="auth-status">
+                    <span id="auth-status-text">Not authenticated</span>
+                </span>
+            </div>
+            <div class="section" style="margin-top: 1rem;">
+                <button id="btn-login">Simulate Login</button>
+                <button id="btn-logout" disabled>Logout</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>API Service (uses AuthService)</h2>
+            <p>The API service automatically includes auth headers from AuthService.</p>
+            <div class="section" style="margin-top: 1rem;">
+                <button id="btn-fetch-public">Fetch Public Data</button>
+                <button id="btn-fetch-protected" disabled>Fetch Protected Data</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Activity Log</h2>
+            <div class="log-container" id="log"></div>
+        </div>
+    </template>
+    
+    <script type="module">
+        import { 
+            createNativeJs, 
+            NativeJsComponent,
+            NativeJsService,
+            registerDefaultComponents
+        } from '../lib/index.js';
+        
+        // Register default components
+        registerDefaultComponents();
+        
+        // ============================================
+        // AUTH SERVICE - Manages authentication state
+        // ============================================
+        class AuthService extends NativeJsService {
+            constructor(container) {
+                super(container);
+                this._token = null;
+                this._user = null;
+                this._listeners = new Set();
+            }
+            
+            get isAuthenticated() {
+                return this._token !== null;
+            }
+            
+            get user() {
+                return this._user;
+            }
+            
+            get token() {
+                return this._token;
+            }
+            
+            // Simulate login
+            async login(username, password) {
+                // In real app, this would make an API call
+                await new Promise(r => setTimeout(r, 500)); // Simulate network
+                
+                this._token = 'mock-jwt-token-' + Date.now();
+                this._user = { id: 1, username, role: 'admin' };
+                
+                this._notifyListeners();
+                return { success: true, user: this._user };
+            }
+            
+            logout() {
+                this._token = null;
+                this._user = null;
+                this._notifyListeners();
+            }
+            
+            // Subscribe to auth state changes
+            subscribe(callback) {
+                this._listeners.add(callback);
+                return () => this._listeners.delete(callback);
+            }
+            
+            _notifyListeners() {
+                this._listeners.forEach(cb => cb(this.isAuthenticated, this._user));
+            }
+        }
+        
+        // ============================================
+        // API SERVICE - Uses AuthService for requests
+        // ============================================
+        class ApiService extends NativeJsService {
+            constructor(container) {
+                super(container);
+                // Resolve AuthService from container
+                // This is the KEY feature - services can depend on other services
+                this.auth = this.resolve('auth');
+            }
+            
+            async fetchPublic() {
+                // Public endpoint - no auth needed
+                return {
+                    message: 'Public data fetched successfully',
+                    timestamp: new Date().toISOString()
+                };
+            }
+            
+            async fetchProtected() {
+                if (!this.auth.isAuthenticated) {
+                    throw new Error('Not authenticated');
+                }
+                
+                // Would normally include token in request
+                const headers = {
+                    'Authorization': `Bearer ${this.auth.token}`
+                };
+                
+                // Simulate API call with auth
+                await new Promise(r => setTimeout(r, 300));
+                
+                return {
+                    message: 'Protected data for ' + this.auth.user.username,
+                    role: this.auth.user.role,
+                    timestamp: new Date().toISOString()
+                };
+            }
+        }
+        
+        // ============================================
+        // DEMO COMPONENT - Uses both services via DI
+        // ============================================
+        class DemoPage extends NativeJsComponent {
+            static tagName = 'n-demo-page';
+            static templateId = 'demo-page';
+            
+            // Declare dependencies - these will be injected automatically
+            static dependencies = ['auth', 'api'];
+            
+            onInit() {
+                // Services are available as properties thanks to static dependencies
+                // They're also accessible via this.inject('auth') or this.container.resolve('auth')
+                
+                this.logEl = this.getChild('#log');
+                this.statusEl = this.getChild('#auth-status');
+                this.statusTextEl = this.getChild('#auth-status-text');
+                this.btnLogin = this.getChild('#btn-login');
+                this.btnLogout = this.getChild('#btn-logout');
+                this.btnFetchPublic = this.getChild('#btn-fetch-public');
+                this.btnFetchProtected = this.getChild('#btn-fetch-protected');
+                
+                // Subscribe to auth changes
+                this.auth.subscribe((isAuth, user) => this.updateAuthUI(isAuth, user));
+                
+                // Bind events
+                this.btnLogin.addEventListener('click', () => this.handleLogin());
+                this.btnLogout.addEventListener('click', () => this.handleLogout());
+                this.btnFetchPublic.addEventListener('click', () => this.handleFetchPublic());
+                this.btnFetchProtected.addEventListener('click', () => this.handleFetchProtected());
+                
+                this.log('info', 'DI Demo initialized');
+                this.log('info', 'AuthService and ApiService injected into component');
+            }
+            
+            updateAuthUI(isAuthenticated, user) {
+                if (isAuthenticated) {
+                    this.statusEl.className = 'status authenticated';
+                    this.statusTextEl.textContent = `Authenticated as ${user.username}`;
+                    this.btnLogin.disabled = true;
+                    this.btnLogout.disabled = false;
+                    this.btnFetchProtected.disabled = false;
+                } else {
+                    this.statusEl.className = 'status unauthenticated';
+                    this.statusTextEl.textContent = 'Not authenticated';
+                    this.btnLogin.disabled = false;
+                    this.btnLogout.disabled = true;
+                    this.btnFetchProtected.disabled = true;
+                }
+            }
+            
+            async handleLogin() {
+                this.log('info', 'Attempting login...');
+                const result = await this.auth.login('demo_user', 'password');
+                this.log('success', `Login successful! User: ${result.user.username}`);
+            }
+            
+            handleLogout() {
+                this.auth.logout();
+                this.log('info', 'Logged out');
+            }
+            
+            async handleFetchPublic() {
+                this.log('info', 'Fetching public data...');
+                const data = await this.api.fetchPublic();
+                this.log('success', `Public: ${data.message}`);
+            }
+            
+            async handleFetchProtected() {
+                this.log('info', 'Fetching protected data with auth header...');
+                try {
+                    const data = await this.api.fetchProtected();
+                    this.log('success', `Protected: ${data.message} (role: ${data.role})`);
+                } catch (error) {
+                    this.log('error', `Error: ${error.message}`);
+                }
+            }
+            
+            log(type, message) {
+                const time = new Date().toLocaleTimeString();
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.innerHTML = `<span class="time">${time}</span>${message}`;
+                this.logEl.prepend(entry);
+            }
+        }
+        
+        // ============================================
+        // INITIALIZE NATIVE.JS WITH DI
+        // ============================================
+        const app = createNativeJs(
+            document.getElementById('app'),
+            [
+                { pathname: '/*', element: DemoPage }
+            ],
+            { basePath: '' }
+        );
+        
+        // Register services with the DI container
+        // Order matters - register dependencies first
+        app.singleton('auth', AuthService);
+        app.singleton('api', ApiService);  // ApiService depends on AuthService
+        
+        // Start the app
+        app.run();
+        
+        console.log('Registered services:', app.container.getTokens());
+    </script>
+</body>
+</html>
+

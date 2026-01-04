@@ -35,5 +35,6 @@ app.run();
 - [Form Components](./components/forms.md)
 - [State Management](./state/overview.md)
 - [Data Fetching](./data/overview.md)
+- [Dependency Injection](./di/overview.md)
 - [Routing](./routing/overview.md)
 

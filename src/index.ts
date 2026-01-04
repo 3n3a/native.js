@@ -1,9 +1,25 @@
 import { createRouter } from "./router";
 import { renderTemplate, renderFragment } from "./render";
-import { createNativeJs, NativeJsComponent, NativeJsComponentRegistry, createNativeJsComponentRegistry, navigateTo } from "./n";
+import { 
+    createNativeJs, 
+    NativeJsComponent, 
+    NativeJsComponentRegistry, 
+    createNativeJsComponentRegistry, 
+    navigateTo,
+    getContainer,
+    tryGetContainer,
+    inject
+} from "./n";
 import { NativeJsState } from "./state";
 import { NativeJsStorage, createNativeJsStorage } from "./storage";
 import { NativeJsDataService, createNativeJsDataService } from "./service";
+
+// Dependency Injection
+import { 
+    NativeJsDIContainer, 
+    createNativeJsDIContainer,
+    NativeJsService
+} from "./di";
 
 // Components library
 import { 
@@ -33,6 +49,13 @@ export {
     createNativeJsStorage,
     NativeJsDataService,
     createNativeJsDataService,
+    // Dependency Injection
+    NativeJsDIContainer,
+    createNativeJsDIContainer,
+    NativeJsService,
+    getContainer,
+    tryGetContainer,
+    inject,
     // Components
     NativeJsFetchForm,
     NativeJsSubmitForm,
@@ -59,6 +82,14 @@ export type {
     NativeJsDeleteOptions,
     NativeJsDataResponse 
 } from "./service";
+export type {
+    NativeJsServiceFactory,
+    NativeJsServiceClass,
+    NativeJsServiceProvider,
+    NativeJsServiceLifecycle,
+    NativeJsInjectable
+} from "./di";
+export type { NativeJsOptions, NativeJsServicesConfig } from "./n";
 
 // Legacy alias for backwards compatibility
 export { NativeJsComponent as NativeJsElement };
